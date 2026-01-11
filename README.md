@@ -2,6 +2,9 @@
 
 A terminal-based Claude Code usage monitor for Linux. Displays your Claude Code usage limits with color-coded status, progress bars, and time-until-reset information directly in your terminal.
 
+<img width="573" height="428" alt="image" src="https://github.com/user-attachments/assets/32024128-e00a-4da5-87ab-923eef0abc1b" />
+
+
 Inspired by the [macOS Claude Usage menubar app](https://github.com/richhickson/claudecodeusage#) by [@richhickson](https://x.com/richhickson).
 
 ## Features
