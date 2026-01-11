@@ -34,7 +34,6 @@
 /* Critical status (>= 90% usage) - Red */
 #custom-claude-usage.critical {
     color: #f38ba8;  /* Catppuccin Mocha Red */
-    animation: pulse-color 2s ease-in-out infinite;
 }
 
 /* Error status (not logged in, network error, etc.) */
@@ -63,7 +62,6 @@
     border-radius: 8px;
     padding: 0 10px;
     box-shadow: 0 0 10px rgba(243, 139, 168, 0.4);
-    animation: none;  /* Stop pulsing on hover */
 }
 
 #custom-claude-usage.error:hover {
@@ -73,18 +71,7 @@
     opacity: 1;
 }
 
-/* Pulse animation for critical status - color only */
-@keyframes pulse-color {
-    0% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.6;
-    }
-    100% {
-        opacity: 1;
-    }
-}
+
 
 /* Alternative: Ultra-minimal (no hover effects, just color) */
 /*
