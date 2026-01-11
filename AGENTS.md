@@ -30,9 +30,20 @@ claude-usage --watch
 # JSON output for scripting
 claude-usage --json
 
-# Waybar integration
-~/.local/bin/claude-usage-waybar
-```
+ # Waybar integration
+ ~/.local/bin/claude-usage-waybar
+ ```
+
+### Updating Local Linux Waybar Config
+
+When users request changes to the local Waybar configuration (e.g., switching click commands, adding modules):
+
+1. **Always use the Omarchy skill** - Load the Omarchy skill before making any changes to Waybar config
+2. **Edit the user's config** - Modify `~/.config/waybar/config.jsonc` directly
+3. **Restart Waybar** - Run `omarchy-restart-waybar` to apply changes (Waybar does NOT auto-reload)
+4. **Test the changes** - Verify the configuration works as expected
+
+**Important**: Never edit files in `~/.local/share/omarchy/` - these are managed by the system and will be overwritten on updates. User configurations go in `~/.config/`.
 
 ### Development Commands
 ```bash
