@@ -42,26 +42,23 @@
     opacity: 0.7;
 }
 
-/* Hover effects - prominent highlight with background and border */
+/* Hover effects - simple background highlight */
 #custom-claude-usage.ok:hover {
     background-color: rgba(166, 227, 161, 0.2);
     border-radius: 8px;
     padding: 0 10px;
-    box-shadow: 0 0 10px rgba(166, 227, 161, 0.3);
 }
 
 #custom-claude-usage.warning:hover {
     background-color: rgba(249, 226, 175, 0.2);
     border-radius: 8px;
     padding: 0 10px;
-    box-shadow: 0 0 10px rgba(249, 226, 175, 0.3);
 }
 
 #custom-claude-usage.critical:hover {
     background-color: rgba(243, 139, 168, 0.2);
     border-radius: 8px;
     padding: 0 10px;
-    box-shadow: 0 0 10px rgba(243, 139, 168, 0.4);
 }
 
 #custom-claude-usage.error:hover {
