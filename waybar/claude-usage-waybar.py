@@ -248,8 +248,11 @@ def main():
         # Save current state
         state_tracker.save_state(int(session_util))
 
-        # Format text: icon + percentage in parentheses for clarity
-        text = f"{emoji} ({int(session_util)}%)"
+        # Format text: icon + percentage only when active, just icon when idle
+        if is_active:
+            text = f"{emoji} ({int(session_util)}%)"
+        else:
+            text = f"{emoji} "
 
         # Format tooltip (always detailed)
         tooltip_lines = [
