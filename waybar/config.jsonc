@@ -1,0 +1,32 @@
+// Claude Usage Module Configuration for Waybar
+// Add this to your ~/.config/waybar/config.jsonc
+//
+// ⚠️ IMPORTANT: Check for signal conflicts!
+// If you have other modules using signal 8, change this to an unused signal number.
+// Example: If "signal": 8 is already in use, change it to "signal": 9, 10, etc.
+
+{
+    // 1. Add "custom/claude-usage" to your modules list
+    // Example for modules-right:
+    // "modules-right": ["custom/claude-usage", "pulseaudio", "network", "battery", "clock"],
+
+    // 2. Add this module definition to your config
+    "custom/claude-usage": {
+        "exec": "~/.local/bin/claude-usage-waybar",
+        "return-type": "json",
+        "interval": 120,  // Refresh every 2 minutes (matching macOS app)
+        "signal": 8,      // Optional: manual refresh with `pkill -SIGRTMIN+8 waybar`
+                          // ⚠️ Change this if signal 8 is already used by another module!
+        "format": "{text}",  // The text already includes the emoji from the script
+        "format-icons": {
+            "ok": "🟢",
+            "warning": "🟡",
+            "critical": "🔴",
+            "error": "❌"
+        },
+        "on-click": "~/.local/bin/claude-usage",  // Show detailed output in terminal
+        "on-click-right": "pkill -SIGRTMIN+8 waybar",  // Manual refresh
+        "tooltip": true,
+        "max-length": 25
+    }
+}

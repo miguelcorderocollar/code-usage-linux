@@ -1,0 +1,130 @@
+/* Claude Usage Module Styling for Waybar - Minimalist Design */
+/* Add this to your ~/.config/waybar/style.css */
+
+/*
+ * Features two display modes:
+ * - Simple mode: Just emoji when idle (no usage changes for 10+ min)
+ * - Active mode: Emoji + percentage when actively coding
+ *
+ * Minimalistic design: just color, no backgrounds
+ * Hover shows details with prominent highlight
+ */
+
+/* Base styling - minimalistic, just color */
+#custom-claude-usage {
+    padding: 0 8px;
+    margin: 0 4px;
+    font-weight: 500;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    background-color: transparent;
+    border: none;
+}
+
+/* OK status (< 70% usage) - Green */
+#custom-claude-usage.ok {
+    color: #a6e3a1;  /* Catppuccin Mocha Green */
+}
+
+/* Warning status (70-89% usage) - Yellow */
+#custom-claude-usage.warning {
+    color: #f9e2af;  /* Catppuccin Mocha Yellow */
+}
+
+/* Critical status (>= 90% usage) - Red */
+#custom-claude-usage.critical {
+    color: #f38ba8;  /* Catppuccin Mocha Red */
+    animation: pulse-color 2s ease-in-out infinite;
+}
+
+/* Error status (not logged in, network error, etc.) */
+#custom-claude-usage.error {
+    color: #cba6f7;  /* Catppuccin Mocha Mauve */
+    opacity: 0.7;
+}
+
+/* Hover effects - prominent highlight with background and border */
+#custom-claude-usage.ok:hover {
+    background-color: rgba(166, 227, 161, 0.2);
+    border-radius: 8px;
+    padding: 0 10px;
+    box-shadow: 0 0 10px rgba(166, 227, 161, 0.3);
+}
+
+#custom-claude-usage.warning:hover {
+    background-color: rgba(249, 226, 175, 0.2);
+    border-radius: 8px;
+    padding: 0 10px;
+    box-shadow: 0 0 10px rgba(249, 226, 175, 0.3);
+}
+
+#custom-claude-usage.critical:hover {
+    background-color: rgba(243, 139, 168, 0.2);
+    border-radius: 8px;
+    padding: 0 10px;
+    box-shadow: 0 0 10px rgba(243, 139, 168, 0.4);
+    animation: none;  /* Stop pulsing on hover */
+}
+
+#custom-claude-usage.error:hover {
+    background-color: rgba(203, 166, 247, 0.2);
+    border-radius: 8px;
+    padding: 0 10px;
+    opacity: 1;
+}
+
+/* Pulse animation for critical status - color only */
+@keyframes pulse-color {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Alternative: Ultra-minimal (no hover effects, just color) */
+/*
+#custom-claude-usage {
+    padding: 0 6px;
+    margin: 0 2px;
+    font-weight: 500;
+}
+
+#custom-claude-usage.ok { color: #a6e3a1; }
+#custom-claude-usage.warning { color: #f9e2af; }
+#custom-claude-usage.critical { color: #f38ba8; }
+#custom-claude-usage.error { color: #cba6f7; opacity: 0.7; }
+*/
+
+/* Alternative: Light theme colors */
+/*
+#custom-claude-usage.ok { color: #40a02b; }
+#custom-claude-usage.warning { color: #df8e1d; }
+#custom-claude-usage.critical { color: #d20f39; }
+#custom-claude-usage.error { color: #8839ef; }
+*/
+
+/* Alternative: Stronger hover with border */
+/*
+#custom-claude-usage.ok:hover {
+    background-color: rgba(166, 227, 161, 0.25);
+    border: 2px solid rgba(166, 227, 161, 0.5);
+    border-radius: 10px;
+}
+
+#custom-claude-usage.warning:hover {
+    background-color: rgba(249, 226, 175, 0.25);
+    border: 2px solid rgba(249, 226, 175, 0.5);
+    border-radius: 10px;
+}
+
+#custom-claude-usage.critical:hover {
+    background-color: rgba(243, 139, 168, 0.25);
+    border: 2px solid rgba(243, 139, 168, 0.5);
+    border-radius: 10px;
+}
+*/
