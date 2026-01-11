@@ -24,8 +24,8 @@
             "critical": "🔴",
             "error": "❌"
         },
-        "on-click": "~/.local/bin/claude-usage",  // Show detailed output in terminal
-        "on-click-right": "pkill -SIGRTMIN+8 waybar",  // Manual refresh
+        "on-click": "pkill -SIGRTMIN+8 waybar",  // Manual refresh
+        "on-click-right": "~/.local/bin/claude-usage",  // Show detailed output in terminal
         "tooltip": true,
         "max-length": 25
     }
