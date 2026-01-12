@@ -11,12 +11,13 @@ Inspired by the macOS Claude Usage menubar app by @richhickson.
 https://github.com/richhickson/claudecodeusage#
 """
 
+import argparse
 import json
 import os
 import sys
 import subprocess
 from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import requests
 
 
@@ -57,27 +58,64 @@ class UsageAPIClient:
         return response.json()
 
 
-def count_claude_instances() -> int:
-    """Count running Claude instances"""
-    try:
-        # Match the executable name 'claude' (without -f to avoid matching child processes or paths)
-        result = subprocess.run(
-            ['pgrep', 'claude'],
-            capture_output=True,
-            timeout=2
-        )
-        if result.returncode == 0:
-            # Count the number of matching processes
-            processes = result.stdout.decode().strip().split('\n')
-            return len([p for p in processes if p])
-        return 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return 0
+def count_program_instances(programs: List[str]) -> Dict[str, int]:
+    """Count running instances of multiple programs
+    
+    Args:
+        programs: List of program names to track (e.g., ['claude', 'opencode'])
+    
+    Returns:
+        Dict mapping program name to count (e.g., {'claude': 2, 'opencode': 1})
+    """
+    counts = {}
+    
+    for program in programs:
+        program = program.strip()
+        if not program:
+            continue
+            
+        try:
+            # Match the executable name exactly with full command line
+            result = subprocess.run(
+                ['pgrep', '-x', program, '-a'],
+                capture_output=True,
+                timeout=2
+            )
+            if result.returncode == 0:
+                # Get process lines with full command
+                output = result.stdout.decode().strip()
+                if not output:
+                    counts[program] = 0
+                    continue
+                    
+                process_lines = output.split('\n')
+                
+                # Filter out helper processes for opencode
+                # Only count main instances (those with --port flag)
+                if program == 'opencode':
+                    main_processes = [line for line in process_lines if '--port' in line]
+                    counts[program] = len(main_processes)
+                else:
+                    # For other programs, count all matches
+                    counts[program] = len([p for p in process_lines if p])
+            else:
+                counts[program] = 0
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            counts[program] = 0
+    
+    return counts
 
 
-def is_claude_running() -> bool:
-    """Check if any Claude instance is running"""
-    return count_claude_instances() > 0
+def is_any_program_running(program_counts: Dict[str, int]) -> bool:
+    """Check if any tracked program is running
+    
+    Args:
+        program_counts: Dict of program names to instance counts
+    
+    Returns:
+        True if at least one program has instances running
+    """
+    return any(count > 0 for count in program_counts.values())
 
 
 class UsageStateTracker:
@@ -127,12 +165,19 @@ class UsageStateTracker:
         except:
             return None
 
-    def is_active_mode(self) -> bool:
+    def is_active_mode(self, programs: List[str]) -> bool:
         """
         Determine if we should show active mode (with percentage).
-        Returns True if any Claude instance is running, False otherwise.
+        Returns True if any tracked program instance is running, False otherwise.
+        
+        Args:
+            programs: List of program names to check
+        
+        Returns:
+            True if any program is running
         """
-        return is_claude_running()
+        program_counts = count_program_instances(programs)
+        return is_any_program_running(program_counts)
 
 
 def format_time_remaining(reset_time_str: Optional[str]) -> str:
@@ -213,9 +258,31 @@ def get_css_class(utilization: float) -> str:
         return 'ok'
 
 
+def parse_arguments():
+    """Parse command-line arguments"""
+    parser = argparse.ArgumentParser(
+        description='Waybar module for Claude Code usage monitoring'
+    )
+    parser.add_argument(
+        '--programs',
+        type=str,
+        default='claude,opencode',
+        help='Comma-separated list of programs to track (default: claude,opencode)'
+    )
+    return parser.parse_args()
+
+
 def main():
     """Main entry point for Waybar module"""
     try:
+        # Parse arguments
+        args = parse_arguments()
+        
+        # Parse programs list
+        programs = [p.strip() for p in args.programs.split(',') if p.strip()]
+        if not programs:
+            programs = ['claude', 'opencode']  # Fallback to defaults
+        
         # Read credentials and fetch usage
         credential_reader = CredentialReader()
         api_client = UsageAPIClient()
@@ -242,8 +309,9 @@ def main():
         css_class = get_css_class(max_util)
 
         # Determine display mode and count instances
-        is_active = state_tracker.is_active_mode()
-        claude_count = count_claude_instances()
+        program_counts = count_program_instances(programs)
+        is_active = is_any_program_running(program_counts)
+        total_instances = sum(program_counts.values())
 
         # Save current state
         state_tracker.save_state(int(session_util))
@@ -273,9 +341,16 @@ def main():
                 f"  Resets in {sonnet_reset}"
             ])
 
-        # Add mode indicator and instance count to tooltip
+        # Add mode indicator and program details to tooltip
         mode_text = "Active coding" if is_active else "Idle"
-        instance_text = f"({claude_count} instance{'s' if claude_count != 1 else ''})" if claude_count > 0 else "(no instances)"
+        
+        if is_active:
+            # Build detailed instance text showing which programs are running
+            active_programs = [f"{name} ({count})" for name, count in program_counts.items() if count > 0]
+            instance_text = f"Tracked: {', '.join(active_programs)}"
+        else:
+            instance_text = "(no instances)"
+        
         tooltip_lines.append(f"\nMode: {mode_text} {instance_text}")
 
         tooltip = "\n".join(tooltip_lines)

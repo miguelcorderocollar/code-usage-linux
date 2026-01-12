@@ -12,7 +12,18 @@
 
     // 2. Add this module definition to your config
     "custom/claude-usage": {
+        // Default: Track both 'claude' and 'opencode' programs
         "exec": "~/.local/bin/claude-usage-waybar",
+        
+        // To track only claude:
+        // "exec": "~/.local/bin/claude-usage-waybar --programs claude",
+        
+        // To track claude and opencode (explicit, same as default):
+        // "exec": "~/.local/bin/claude-usage-waybar --programs claude,opencode",
+        
+        // To add custom programs (e.g., cursor, cline, etc.):
+        // "exec": "~/.local/bin/claude-usage-waybar --programs claude,opencode,cursor",
+        
         "return-type": "json",
         "interval": 120,  // Refresh every 2 minutes (matching macOS app)
         "signal": 8,      // Optional: manual refresh with `pkill -SIGRTMIN+8 waybar`

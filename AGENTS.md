@@ -93,6 +93,39 @@ print(formatter.format_output(sample_data))
 print('JSON output:')
 print(formatter.format_json_output(sample_data))
 "
+
+# Test process tracking
+python3 -c "
+from claude_usage import count_program_instances
+programs = ['claude', 'opencode']
+counts = count_program_instances(programs)
+print('Process counts:', counts)
+"
+```
+
+### Testing Process Tracking Features
+```bash
+# Test with default programs (claude, opencode)
+claude-usage --verbose
+
+# Test with custom programs
+claude-usage --programs claude,opencode --verbose
+
+# Test with only one program
+claude-usage --programs claude --verbose
+
+# Test Waybar module with process tracking
+~/.local/bin/claude-usage-waybar
+
+# Test Waybar module with custom programs
+~/.local/bin/claude-usage-waybar --programs claude,opencode,cursor
+
+# Check what processes are actually running
+pgrep -l 'claude|opencode'
+
+# Test exact process matching
+pgrep -x claude
+pgrep -x opencode
 ```
 
 ## Code Style Guidelines

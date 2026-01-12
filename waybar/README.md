@@ -176,6 +176,45 @@ systemctl --user restart waybar
 
 ## Configuration Options
 
+### Tracking Multiple Programs
+
+By default, the module tracks both `claude` and `opencode` processes to determine if you're actively coding. When any tracked program is running, the module switches to "active mode" and displays the usage percentage.
+
+**Customize tracked programs:**
+
+```jsonc
+// Default: Track claude and opencode
+"exec": "~/.local/bin/claude-usage-waybar",
+
+// Track only claude
+"exec": "~/.local/bin/claude-usage-waybar --programs claude",
+
+// Track claude, opencode, and cursor
+"exec": "~/.local/bin/claude-usage-waybar --programs claude,opencode,cursor",
+
+// Track any custom programs
+"exec": "~/.local/bin/claude-usage-waybar --programs my-ai-tool,another-tool",
+```
+
+**How it works:**
+- When any tracked program is running: Shows icon + percentage (e.g., "🟢 (25%)")
+- When no tracked programs are running: Shows only icon (e.g., "🟢 ")
+- Tooltip always shows which programs are detected and how many instances
+
+**Example tooltip with active programs:**
+```
+Claude Code Usage
+
+Session (5h): 30%
+  Resets in 3h 57m
+
+Weekly (7d): 4%
+  Resets in 6d 22h
+
+Mode: Active coding
+Tracked: claude (1), opencode (2)
+```
+
 ### Refresh Interval
 
 Change the `interval` value in the config (in seconds):

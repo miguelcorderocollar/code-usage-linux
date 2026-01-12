@@ -113,6 +113,37 @@ Example JSON output:
 }
 ```
 
+### Verbose Mode
+
+Show detailed information including detected processes:
+```bash
+claude-usage --verbose
+```
+
+Example output with verbose mode:
+```
+Claude Code Usage Status
+========================
+
+Session Usage (5-hour window)
+  🟢 23%  [████████░░░░░░░░░░░░░░░░░░░░░░░░]
+  Resets in 2h 37m
+
+Weekly Usage (7-day window)
+  🟢 15%  [█████░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+  Resets in 4d 12h
+
+Last updated: 2026-01-12 18:45:32
+
+Active Programs
+------------------------
+
+  • claude: 1 instance
+  • opencode: 2 instances
+
+Total: 3 instances running
+```
+
 ### Help
 
 Show all options:
@@ -205,6 +236,37 @@ source ~/.bashrc
 - No data sent anywhere except Anthropic's API
 - Open source - verify the code yourself
 
+## Process Tracking Configuration
+
+The terminal script can track multiple AI coding assistant programs to provide process information in verbose mode. By default, it tracks `claude` and `opencode`.
+
+### Customize Tracked Programs
+
+Track specific programs:
+```bash
+# Track only claude
+claude-usage --programs claude --verbose
+
+# Track claude and opencode (default)
+claude-usage --programs claude,opencode --verbose
+
+# Track claude, opencode, and cursor
+claude-usage --programs claude,opencode,cursor --verbose
+
+# Track any custom programs
+claude-usage --programs my-ai-tool,another-tool --verbose
+```
+
+### How It Works
+
+- The `--programs` flag accepts a comma-separated list of process names
+- Process names are case-sensitive and must match exactly
+- Use `pgrep -l <program>` to verify the exact process name
+- The script uses `pgrep -x` for exact matching
+- Verbose mode shows which programs are detected and how many instances
+
+**Note:** The Waybar integration uses the same `--programs` flag to determine active/idle display mode. See [waybar/README.md](waybar/README.md) for details.
+
 ## Advanced Usage
 
 ### Shell Alias
@@ -213,6 +275,7 @@ Add to your `.bashrc` or `.zshrc`:
 ```bash
 alias cu='claude-usage'
 alias cuw='claude-usage --watch'
+alias cuv='claude-usage --verbose'
 ```
 
 ### Cron Job

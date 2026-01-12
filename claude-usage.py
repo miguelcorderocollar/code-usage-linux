@@ -10,9 +10,10 @@ import json
 import os
 import sys
 import argparse
+import subprocess
 import time
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import requests
 
 
@@ -144,6 +145,54 @@ class UsageAPIClient:
             raise last_error
 
         return {}
+
+
+def count_program_instances(programs: List[str]) -> Dict[str, int]:
+    """Count running instances of multiple programs
+    
+    Args:
+        programs: List of program names to track (e.g., ['claude', 'opencode'])
+    
+    Returns:
+        Dict mapping program name to count (e.g., {'claude': 2, 'opencode': 1})
+    """
+    counts = {}
+    
+    for program in programs:
+        program = program.strip()
+        if not program:
+            continue
+            
+        try:
+            # Match the executable name exactly with full command line
+            result = subprocess.run(
+                ['pgrep', '-x', program, '-a'],
+                capture_output=True,
+                timeout=2
+            )
+            if result.returncode == 0:
+                # Get process lines with full command
+                output = result.stdout.decode().strip()
+                if not output:
+                    counts[program] = 0
+                    continue
+                    
+                process_lines = output.split('\n')
+                
+                # Filter out helper processes for opencode
+                # Only count main instances (those with --port flag)
+                if program == 'opencode':
+                    main_processes = [line for line in process_lines if '--port' in line]
+                    counts[program] = len(main_processes)
+                else:
+                    # For other programs, count all matches
+                    counts[program] = len([p for p in process_lines if p])
+            else:
+                counts[program] = 0
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            counts[program] = 0
+    
+    return counts
 
 
 class UsageFormatter:
@@ -316,6 +365,36 @@ class UsageFormatter:
 
         return "\n".join(sections)
 
+    def format_process_info(self, program_counts: Dict[str, int]) -> str:
+        """
+        Format process detection information (for --verbose mode).
+        
+        Args:
+            program_counts: Dict of program names to instance counts
+        
+        Returns:
+            Formatted string showing detected processes
+        """
+        sections = []
+        sections.append(f"{Colors.BOLD}Active Programs{Colors.RESET}")
+        sections.append("-" * 24)
+        sections.append("")
+        
+        total_instances = sum(program_counts.values())
+        
+        if total_instances == 0:
+            sections.append(f"{Colors.DIM}No tracked programs running (idle mode){Colors.RESET}")
+        else:
+            active_programs = [(name, count) for name, count in program_counts.items() if count > 0]
+            for name, count in active_programs:
+                instance_word = "instance" if count == 1 else "instances"
+                sections.append(f"  {Colors.GREEN}•{Colors.RESET} {name}: {count} {instance_word}")
+            
+            sections.append("")
+            sections.append(f"{Colors.DIM}Total: {total_instances} instance{'s' if total_instances != 1 else ''} running{Colors.RESET}")
+        
+        return "\n".join(sections)
+
     def format_json_output(self, usage_data: Dict[str, Any]) -> str:
         """
         Format usage data as JSON.
@@ -378,9 +457,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s              Show current usage
-  %(prog)s --watch      Auto-refresh every 2 minutes
-  %(prog)s --json       Output as JSON for scripting
+  %(prog)s                                Show current usage
+  %(prog)s --watch                        Auto-refresh every 2 minutes
+  %(prog)s --json                         Output as JSON for scripting
+  %(prog)s --verbose                      Show detailed process information
+  %(prog)s --programs claude,opencode     Track specific programs
         """
     )
     parser.add_argument(
@@ -393,8 +474,24 @@ Examples:
         action='store_true',
         help='Output as JSON instead of formatted text'
     )
+    parser.add_argument(
+        '--programs',
+        type=str,
+        default='claude,opencode',
+        help='Comma-separated list of programs to track (default: claude,opencode)'
+    )
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='Show detailed information including detected processes'
+    )
 
     args = parser.parse_args()
+    
+    # Parse programs list
+    programs = [p.strip() for p in args.programs.split(',') if p.strip()]
+    if not programs:
+        programs = ['claude', 'opencode']  # Fallback to defaults
 
     credential_reader = CredentialReader()
     api_client = UsageAPIClient()
@@ -414,6 +511,12 @@ Examples:
                 print(formatter.format_json_output(usage_data))
             else:
                 print(formatter.format_output(usage_data))
+                
+                # Show process information in verbose mode
+                if args.verbose:
+                    print()
+                    program_counts = count_program_instances(programs)
+                    print(formatter.format_process_info(program_counts))
 
             return True
 
