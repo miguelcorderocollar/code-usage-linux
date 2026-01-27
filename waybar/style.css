@@ -34,10 +34,16 @@
     color: #f38ba8;  /* Catppuccin Mocha Red */
 }
 
-/* Error status (not logged in, network error, etc.) */
+/* No credentials (not logged in) - Blue/Cyan with key icon */
+#custom-claude-usage.no-credentials {
+    color: #89dceb;  /* Catppuccin Mocha Cyan */
+    opacity: 0.8;
+}
+
+/* Error status (network error, API errors, etc.) - Warning icon */
 #custom-claude-usage.error {
-    color: #cba6f7;  /* Catppuccin Mocha Mauve */
-    opacity: 0.7;
+    color: #f9e2af;  /* Catppuccin Mocha Yellow */
+    opacity: 0.8;
 }
 
 
