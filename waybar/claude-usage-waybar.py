@@ -368,11 +368,11 @@ def main():
         sys.exit(0)
 
     except FileNotFoundError:
-        # Not logged in
+        # Not logged in - show key icon
         output = {
-            "text": "\uf071",
+            "text": "\uf084",
             "tooltip": "Not logged in to Claude Code\nRun: claude",
-            "class": "error"
+            "class": "no-credentials"
         }
         print(json.dumps(output))
         sys.exit(0)
