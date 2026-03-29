@@ -104,7 +104,7 @@ omarchy-restart-waybar
 
 ### Provider selection
 
-Default:
+Default combined mode:
 
 ```jsonc
 "exec": "~/.local/bin/code-usage-waybar --provider auto --programs claude,codex,opencode"
@@ -120,6 +120,12 @@ Force Codex only:
 
 ```jsonc
 "exec": "~/.local/bin/code-usage-waybar --provider codex"
+```
+
+Codex-only setup with Codex-only process tracking:
+
+```jsonc
+"exec": "~/.local/bin/code-usage-waybar --provider codex --programs codex"
 ```
 
 Compatibility alias:
@@ -139,6 +145,12 @@ Customize tracked programs:
 ```
 
 The tooltip shows active tracked programs and instance counts.
+
+Recommended combinations:
+
+- `--provider auto --programs claude,codex,opencode` for mixed setups
+- `--provider codex --programs codex` if you only care about Codex
+- `--provider claude --programs claude` if you only care about Claude
 
 ### Refresh interval
 

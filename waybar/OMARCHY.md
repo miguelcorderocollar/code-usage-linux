@@ -30,11 +30,27 @@ Add this module:
 }
 ```
 
+If you only care about Codex right now, use this instead:
+
+```jsonc
+"custom/code-usage": {
+  "exec": "~/.local/bin/code-usage-waybar --provider codex --programs codex",
+  "return-type": "json",
+  "interval": 120,
+  "signal": 11,
+  "format": "{text}",
+  "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -lc 'code-usage --provider codex; echo; echo Press Enter to close; read'",
+  "on-click-right": "pkill -SIGRTMIN+11 waybar",
+  "tooltip": true,
+  "max-length": 25
+}
+```
+
 ### Why these settings
 
 1. `signal: 11` avoids conflicts with your existing Omarchy indicators
 2. `xdg-terminal-exec` follows Omarchy's launcher pattern
-3. `code-usage --provider auto` gives the same provider selection behavior as the Waybar module
+3. You can lock the module to one provider if you only care about one service
 
 ## Suggested module position
 
@@ -113,6 +129,13 @@ pkill -SIGRTMIN+11 waybar
 ```bash
 ~/.local/bin/code-usage-waybar --provider auto
 ~/.local/bin/code-usage --provider auto
+```
+
+Codex-only:
+
+```bash
+~/.local/bin/code-usage-waybar --provider codex --programs codex
+~/.local/bin/code-usage --provider codex
 ```
 
 ## Troubleshooting
