@@ -4,15 +4,27 @@
     margin: 0 8px;
 }
 
-#custom-code-usage.ok {
+#custom-code-usage.usage-0 {
     color: #a6e3a1;
 }
 
-#custom-code-usage.warning {
+#custom-code-usage.usage-50 {
+    color: #94e2d5;
+}
+
+#custom-code-usage.usage-70 {
     color: #f9e2af;
 }
 
-#custom-code-usage.critical,
+#custom-code-usage.usage-85 {
+    color: #fab387;
+}
+
+#custom-code-usage.usage-95,
 #custom-code-usage.error {
     color: #f38ba8;
+}
+
+#custom-code-usage.idle {
+    opacity: 0.65;
 }
