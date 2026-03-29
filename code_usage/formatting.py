@@ -21,6 +21,7 @@ class Colors:
 
 
 PROGRESS_BAR_WIDTH = 32
+WEEK_SECONDS = 7 * 24 * 60 * 60
 
 
 def status_from_utilization(utilization: float) -> str:
@@ -30,6 +31,13 @@ def status_from_utilization(utilization: float) -> str:
     if utilization >= 70:
         return "warning"
     return "ok"
+
+
+def _is_weekly_window(window: UsageWindow) -> bool:
+    """Return True when a usage window represents a week-based quota."""
+    if window.limit_window_seconds is None:
+        return window.key in {"weekly", "sonnet", "code_review"}
+    return window.limit_window_seconds >= WEEK_SECONDS
 
 
 def usage_tier_class(utilization: float) -> str:
@@ -210,8 +218,10 @@ def build_waybar_payload(
     percentage = int(primary.max_utilization)
     status = status_from_utilization(primary.max_utilization)
     tier_class = usage_tier_class(primary.max_utilization)
+    dominant_window = max(primary.windows, key=lambda window: window.utilization, default=None)
+    weekly_suffix = "w" if dominant_window and _is_weekly_window(dominant_window) else ""
 
-    text = f"\uf121 {percentage}%"
+    text = f"\uf121 {percentage}%{weekly_suffix}"
 
     tooltip_lines = [
         "Code Usage",

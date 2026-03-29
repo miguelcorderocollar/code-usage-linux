@@ -19,6 +19,20 @@ cp claude-usage.py ~/.local/bin/claude-usage
 chmod +x ~/.local/bin/claude-usage
 ```
 
+### Local Laptop Testing Loop
+Use this whenever you change code and want to validate behavior in your real local environment.
+
+```bash
+# Reinstall the latest local working tree to ~/.local/bin
+./install.sh
+
+# Run the installed commands (not the repo files) to test exactly what users run
+~/.local/bin/code-usage --provider auto
+~/.local/bin/code-usage-waybar --provider auto
+```
+
+Reminder: during development, you can always update your local laptop setup with `./install.sh` before testing changes.
+
 ### Running the Application
 ```bash
 # Basic usage (show current usage)
