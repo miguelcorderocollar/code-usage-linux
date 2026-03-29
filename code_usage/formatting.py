@@ -212,8 +212,6 @@ def build_waybar_payload(
     tier_class = usage_tier_class(primary.max_utilization)
 
     text = f"\uf121 {percentage}%"
-    if not active:
-        text = "\uf121"
 
     tooltip_lines = [
         "Code Usage",

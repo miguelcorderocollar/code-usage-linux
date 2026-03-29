@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from typing import List, Optional
 
@@ -11,6 +12,8 @@ from code_usage import resolve_provider_usage
 from code_usage.formatting import build_waybar_payload
 from code_usage.processes import DEFAULT_PROGRAMS, count_program_instances, parse_programs
 from code_usage.providers.base import ProviderError
+
+LOADING_MARKER_PATH = "/tmp/code-usage-waybar.loading"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -42,11 +45,38 @@ def _error_payload(message: str) -> dict:
     }
 
 
+def _loading_payload() -> dict:
+    """Render a transient loading payload for click-triggered refreshes."""
+    return {
+        "text": "\uf121 ...",
+        "tooltip": "Manual refresh in progress...",
+        "class": ["loading", "manual-refresh"],
+        "percentage": 0,
+        "alt": "loading",
+    }
+
+
+def _consume_loading_marker() -> bool:
+    """Return True when a click-triggered refresh marker is present."""
+    try:
+        os.remove(LOADING_MARKER_PATH)
+        return True
+    except FileNotFoundError:
+        return False
+    except OSError:
+        # Marker handling should never break the module output.
+        return False
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """Run the Waybar helper."""
     parser = build_parser()
     args = parser.parse_args(argv)
     programs = parse_programs(args.programs)
+
+    if _consume_loading_marker():
+        print(json.dumps(_loading_payload()))
+        return 0
 
     try:
         primary, providers = resolve_provider_usage(args.provider)

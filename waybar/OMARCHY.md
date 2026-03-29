@@ -23,7 +23,7 @@ Add this module:
   "interval": 120,
   "signal": 11,
   "format": "{text}",
-  "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -lc 'code-usage --provider auto; echo; echo Press Enter to close; read'",
+  "on-click": "sh -c 'touch /tmp/code-usage-waybar.loading; pkill -SIGRTMIN+11 waybar; sleep 0.35; pkill -SIGRTMIN+11 waybar; sleep 0.8; pkill -SIGRTMIN+11 waybar'",
   "on-click-right": "pkill -SIGRTMIN+11 waybar",
   "tooltip": true,
   "max-length": 25
@@ -39,7 +39,7 @@ If you only care about Codex right now, use this instead:
   "interval": 120,
   "signal": 11,
   "format": "{text}",
-  "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -lc 'code-usage --provider codex; echo; echo Press Enter to close; read'",
+  "on-click": "sh -c 'touch /tmp/code-usage-waybar.loading; pkill -SIGRTMIN+11 waybar; sleep 0.35; pkill -SIGRTMIN+11 waybar; sleep 0.8; pkill -SIGRTMIN+11 waybar'",
   "on-click-right": "pkill -SIGRTMIN+11 waybar",
   "tooltip": true,
   "max-length": 25
@@ -49,7 +49,7 @@ If you only care about Codex right now, use this instead:
 ### Why these settings
 
 1. `signal: 11` avoids conflicts with your existing Omarchy indicators
-2. `xdg-terminal-exec` follows Omarchy's launcher pattern
+2. Left click does an in-place refresh with a temporary loading indicator
 3. You can lock the module to one provider if you only care about one service
 
 ## Suggested module position
@@ -117,6 +117,10 @@ Do not edit files under `~/.local/share/omarchy/`.
 #custom-code-usage.usage-95,
 #custom-code-usage.error {
   color: #f38ba8;
+}
+
+#custom-code-usage.loading {
+  color: #89b4fa;
 }
 
 #custom-code-usage.idle {

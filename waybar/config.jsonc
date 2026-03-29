@@ -15,7 +15,7 @@
     "interval": 120,
     "signal": 11,
     "format": "{text}",
-    "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -lc 'code-usage --provider auto; echo; echo Press Enter to close; read'",
+    "on-click": "sh -c 'touch /tmp/code-usage-waybar.loading; pkill -SIGRTMIN+11 waybar; sleep 0.35; pkill -SIGRTMIN+11 waybar; sleep 0.8; pkill -SIGRTMIN+11 waybar'",
     "on-click-right": "pkill -SIGRTMIN+11 waybar",
     "tooltip": true,
     "max-length": 25

@@ -22,9 +22,13 @@
 
 #custom-code-usage.usage-95,
 #custom-code-usage.error {
-    color: #f38ba8;
+  color: #f38ba8;
+}
+
+#custom-code-usage.loading {
+  color: #89b4fa;
 }
 
 #custom-code-usage.idle {
-    opacity: 0.65;
+  opacity: 0.65;
 }

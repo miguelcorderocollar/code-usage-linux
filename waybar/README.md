@@ -19,7 +19,8 @@ Compatibility alias:
 - Rich tooltip with provider windows, plan type, and active processes
 - Auto-refresh every 2 minutes by default
 - Manual refresh via signal
-- Click action to open the terminal view
+- Click-to-refresh without opening a terminal
+- Loading indicator only for click-triggered refreshes
 
 ## Installation
 
@@ -56,7 +57,7 @@ Add the module to your `~/.config/waybar/config.jsonc`:
     "interval": 120,
     "signal": 11,
     "format": "{text}",
-    "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -lc 'code-usage --provider auto; echo; echo Press Enter to close; read'",
+    "on-click": "sh -c 'touch /tmp/code-usage-waybar.loading; pkill -SIGRTMIN+11 waybar; sleep 0.35; pkill -SIGRTMIN+11 waybar; sleep 0.8; pkill -SIGRTMIN+11 waybar'",
     "on-click-right": "pkill -SIGRTMIN+11 waybar",
     "tooltip": true,
     "max-length": 25
@@ -93,6 +94,10 @@ Add this to `~/.config/waybar/style.css`:
 #custom-code-usage.usage-95,
 #custom-code-usage.error {
   color: #f38ba8;
+}
+
+#custom-code-usage.loading {
+  color: #89b4fa;
 }
 
 #custom-code-usage.idle {
@@ -177,6 +182,15 @@ Recommended combinations:
 ```bash
 pkill -SIGRTMIN+11 waybar
 ```
+
+### Click refresh behavior
+
+Left click now performs a staged manual refresh:
+
+1. Show a temporary loading state (` ...`)
+2. Trigger multiple follow-up refresh signals to avoid getting stuck in loading
+
+This loading state is only shown for click-triggered refreshes, not normal interval refreshes.
 
 ## Troubleshooting
 
