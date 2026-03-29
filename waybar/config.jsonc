@@ -1,43 +1,23 @@
-// Claude Usage Module Configuration for Waybar
-// Add this to your ~/.config/waybar/config.jsonc
-//
-// ⚠️ IMPORTANT: Check for signal conflicts!
-// If you have other modules using signal 8, change this to an unused signal number.
-// Example: If "signal": 8 is already in use, change it to "signal": 9, 10, etc.
-
 {
-    // 1. Add "custom/claude-usage" to your modules list
-    // Example for modules-right:
-    // "modules-right": ["custom/claude-usage", "pulseaudio", "network", "battery", "clock"],
-
-    // 2. Add this module definition to your config
-    "custom/claude-usage": {
-        // Default: Track both 'claude' and 'opencode' programs
-        "exec": "~/.local/bin/claude-usage-waybar",
-        
-        // To track only claude:
-        // "exec": "~/.local/bin/claude-usage-waybar --programs claude",
-        
-        // To track claude and opencode (explicit, same as default):
-        // "exec": "~/.local/bin/claude-usage-waybar --programs claude,opencode",
-        
-        // To add custom programs (e.g., cursor, cline, etc.):
-        // "exec": "~/.local/bin/claude-usage-waybar --programs claude,opencode,cursor",
-        
-        "return-type": "json",
-        "interval": 120,  // Refresh every 2 minutes (matching macOS app)
-        "signal": 8,      // Optional: manual refresh with `pkill -SIGRTMIN+8 waybar`
-                          // ⚠️ Change this if signal 8 is already used by another module!
-        "format": "{text}",  // The text already includes the emoji from the script
-        "format-icons": {
-            "ok": "🟢",
-            "warning": "🟡",
-            "critical": "🔴",
-            "error": "❌"
-        },
-        "on-click": "pkill -SIGRTMIN+8 waybar",  // Manual refresh
-        "on-click-right": "~/.local/bin/claude-usage",  // Show detailed output in terminal
-        "tooltip": true,
-        "max-length": 25
-    }
+  "modules-right": [
+    "group/tray-expander",
+    "custom/code-usage",
+    "bluetooth",
+    "network",
+    "custom/pia-vpn",
+    "pulseaudio",
+    "cpu",
+    "battery"
+  ],
+  "custom/code-usage": {
+    "exec": "~/.local/bin/code-usage-waybar --provider auto --programs claude,codex,opencode",
+    "return-type": "json",
+    "interval": 120,
+    "signal": 11,
+    "format": "{text}",
+    "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -lc 'code-usage --provider auto; echo; echo Press Enter to close; read'",
+    "on-click-right": "pkill -SIGRTMIN+11 waybar",
+    "tooltip": true,
+    "max-length": 25
+  }
 }

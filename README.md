@@ -1,33 +1,51 @@
-# Claude Usage for Linux
+# Code Usage for Linux
 
-A terminal-based Claude Code usage monitor for Linux. Displays your Claude Code usage limits with color-coded status, progress bars, and time-until-reset information directly in your terminal.
+A terminal-based usage monitor for Linux that displays quota windows, reset timers, and process activity for supported coding assistants.
 
-<img width="573" height="428" alt="image" src="https://github.com/user-attachments/assets/32024128-e00a-4da5-87ab-923eef0abc1b" />
+It currently supports:
 
+- Claude Code via Anthropic OAuth usage
+- Codex via an experimental ChatGPT-auth usage endpoint
+
+The project now exposes provider-neutral commands:
+
+- `code-usage`
+- `code-usage-waybar`
+
+Backward-compatible aliases remain available:
+
+- `claude-usage`
+- `claude-usage-waybar`
+
+The GitHub repository is still named `claude-usage-linux`, but the product and command surface have been generalized to **Code Usage for Linux**.
 
 Inspired by the [macOS Claude Usage menubar app](https://github.com/richhickson/claudecodeusage#) by [@richhickson](https://x.com/richhickson).
 
 ## Features
 
-- **Color-coded status** - Green (OK), Yellow (>70%), Red (>90%)
-- **Session & Weekly limits** - Shows both 5-hour and 7-day usage windows
-- **Progress bars** - Visual representation of usage levels
-- **Time until reset** - Human-readable countdown (e.g., "2h 37m" or "4d 12h")
-- **Watch mode** - Auto-refresh every 2 minutes (matching macOS app)
-- **JSON output** - For scripting and automation
-- **Waybar integration** - Status bar module for Wayland desktops
-- **Lightweight** - Single Python script, minimal dependencies
+- Color-coded status: green (OK), yellow (>70%), red (>90%)
+- Session and weekly limits
+- Progress bars in terminal output
+- Human-readable reset countdowns like `2h 37m` and `4d 12h`
+- Watch mode with 2-minute refreshes
+- JSON output for scripting and automation
+- Waybar integration for Wayland desktops
+- Provider selection with `--provider auto|claude|codex`
+- Auto-selection of the highest-utilization working provider
+- Process tracking for `claude`, `codex`, and `opencode`
+- Compatibility aliases for previous Claude-specific installs
 
 ## Requirements
 
-- **Linux** - Any modern distribution
-- **Python 3.8+** - Usually pre-installed
-- **Claude Code CLI** - Must be installed and logged in
-- **requests library** - Installed automatically by install script
+- Linux
+- Python 3.8+
+- `requests>=2.25.0`
+- Claude Code login for Claude support
+- Codex login for experimental Codex support
 
 ## Installation
 
-### Quick Install
+### Quick install
 
 ```bash
 chmod +x install.sh
@@ -35,141 +53,167 @@ chmod +x install.sh
 ```
 
 The install script will:
-1. Check Python version (requires 3.8+)
-2. Install the `requests` library
-3. Copy `claude-usage` to `~/.local/bin`
-4. Update your PATH if needed
 
-### Manual Install
+1. Check your Python version
+2. Install the `requests` dependency
+3. Install the shared `code_usage/` package to `~/.local/bin/code_usage`
+4. Install the command wrappers to `~/.local/bin`
+5. Add `~/.local/bin` to your shell PATH if needed
+
+Installed commands:
+
+- `code-usage`
+- `code-usage-waybar`
+- `claude-usage`
+- `claude-usage-waybar`
+
+### Manual install
 
 ```bash
-# Install dependencies
-pip3 install --user requests
-
-# Copy script to local bin
+pip3 install --user 'requests>=2.25.0'
+mkdir -p ~/.local/bin
+cp -r code_usage ~/.local/bin/code_usage
+cp code-usage.py ~/.local/bin/code-usage
+cp waybar/code-usage-waybar.py ~/.local/bin/code-usage-waybar
 cp claude-usage.py ~/.local/bin/claude-usage
-chmod +x ~/.local/bin/claude-usage
-
-# Add to PATH if needed
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
+cp waybar/claude-usage-waybar.py ~/.local/bin/claude-usage-waybar
+chmod +x ~/.local/bin/code-usage ~/.local/bin/code-usage-waybar
+chmod +x ~/.local/bin/claude-usage ~/.local/bin/claude-usage-waybar
 ```
 
-## Waybar Integration
+## Waybar integration
 
-For Wayland users with Waybar status bar, there's a dedicated module for real-time monitoring in your status bar. See [waybar/README.md](waybar/README.md) for installation and configuration instructions.
+For Wayland users with Waybar, there is a dedicated module for real-time monitoring in the status bar. See [waybar/README.md](waybar/README.md) for general setup and [waybar/OMARCHY.md](waybar/OMARCHY.md) for Omarchy-specific configuration.
 
 ## Usage
 
-### Basic Usage
+### Basic usage
 
-Show current usage:
+Auto-select the highest-utilization working provider:
+
+```bash
+code-usage
+```
+
+Force a specific provider:
+
+```bash
+code-usage --provider claude
+code-usage --provider codex
+```
+
+Compatibility alias:
+
 ```bash
 claude-usage
 ```
 
-Example output:
-```
-Claude Code Usage Status
-========================
+### Watch mode
 
-Session Usage (5-hour window)
-  🟢 23%  [████████░░░░░░░░░░░░░░░░░░░░░░░░]
-  Resets in 2h 37m
+Auto-refresh every 2 minutes:
 
-Weekly Usage (7-day window)
-  🟢 15%  [█████░░░░░░░░░░░░░░░░░░░░░░░░░░░]
-  Resets in 4d 12h
-
-Last updated: 2026-01-11 18:45:32
-```
-
-### Watch Mode
-
-Auto-refresh every 2 minutes (press Ctrl+C to exit):
 ```bash
-claude-usage --watch
+code-usage --watch
 ```
 
-### JSON Output
+### JSON output
 
-For scripting and automation:
 ```bash
-claude-usage --json
+code-usage --json
 ```
 
 Example JSON output:
+
 ```json
 {
-  "session": {
-    "utilization": 23,
-    "resets_at": "2026-01-11T21:22:15Z"
-  },
-  "weekly": {
-    "utilization": 15,
-    "resets_at": "2026-01-16T06:45:00Z"
-  },
-  "status": "ok"
+  "provider": "codex",
+  "provider_display_name": "Codex",
+  "selection_mode": "auto",
+  "status": "ok",
+  "max_utilization": 27,
+  "providers": {
+    "codex": {
+      "plan_type": "plus",
+      "experimental": true,
+      "windows": []
+    }
+  }
 }
 ```
 
-### Verbose Mode
+### Verbose mode
 
 Show detailed information including detected processes:
+
 ```bash
-claude-usage --verbose
-```
-
-Example output with verbose mode:
-```
-Claude Code Usage Status
-========================
-
-Session Usage (5-hour window)
-  🟢 23%  [████████░░░░░░░░░░░░░░░░░░░░░░░░]
-  Resets in 2h 37m
-
-Weekly Usage (7-day window)
-  🟢 15%  [█████░░░░░░░░░░░░░░░░░░░░░░░░░░░]
-  Resets in 4d 12h
-
-Last updated: 2026-01-12 18:45:32
-
-Active Programs
-------------------------
-
-  • claude: 1 instance
-  • opencode: 2 instances
-
-Total: 3 instances running
+code-usage --verbose
+code-usage --programs claude,codex,opencode --verbose
 ```
 
 ### Help
 
-Show all options:
 ```bash
-claude-usage --help
+code-usage --help
 ```
 
 ## Prerequisites
 
-Before using Claude Usage, you must be logged in to Claude Code:
+### Claude
+
+If you want Claude support, install and log in to Claude Code:
 
 ```bash
-# Install Claude Code if you haven't already
-npm install -g @anthropic-ai/claude-code
-
-# Log in
 claude
 ```
 
-## How It Works
+### Codex
 
-Claude Usage reads your Claude Code OAuth credentials from `~/.claude/.credentials.json` and queries the Anthropic usage API at `https://api.anthropic.com/api/oauth/usage`.
+If you want Codex support, log in to Codex:
 
-**Note:** This uses an undocumented API that could change at any time. The script will gracefully handle API changes but may stop working if Anthropic modifies the endpoint.
+```bash
+codex login
+```
 
-## Color Coding
+## How it works
+
+### Claude provider
+
+The Claude provider reads `~/.claude/.credentials.json` and queries:
+
+```text
+https://api.anthropic.com/api/oauth/usage
+```
+
+Normalized windows:
+
+- session (`five_hour`)
+- weekly (`seven_day`)
+- optional sonnet-only weekly window
+
+### Codex provider
+
+The Codex provider reads `~/.codex/auth.json` and queries:
+
+```text
+https://chatgpt.com/backend-api/wham/usage
+```
+
+If needed, it attempts token refresh through:
+
+```text
+https://auth.openai.com/oauth/token
+```
+
+Normalized windows:
+
+- session
+- weekly
+- optional code review weekly window
+- plan type
+
+Important: Codex support is experimental because it depends on an undocumented endpoint and auth flow that may change without notice.
+
+## Color coding
 
 | Status | Color | Percentage |
 |--------|-------|------------|
@@ -177,149 +221,88 @@ Claude Usage reads your Claude Code OAuth credentials from `~/.claude/.credentia
 | 🟡 Warning | Yellow | 70-89% |
 | 🔴 Critical | Red | ≥ 90% |
 
+## Process tracking
+
+By default, the app tracks:
+
+```text
+claude,codex,opencode
+```
+
+Customize tracked programs:
+
+```bash
+code-usage --programs codex --verbose
+code-usage --programs claude,codex,opencode --verbose
+code-usage --programs claude,cursor --verbose
+code-usage --programs my-ai-tool,another-tool --verbose
+```
+
 ## Troubleshooting
 
-### "Not logged in to Claude Code"
+### "Not logged in" or auth errors
 
-You need to authenticate with Claude Code first:
+Claude:
+
 ```bash
 claude
 ```
 
-Complete the login flow in your browser, then try running `claude-usage` again.
+Codex:
 
-### "Credentials file is corrupted"
+```bash
+codex login
+```
 
-Your credentials file may be damaged. Re-authenticate:
+### Claude authentication expired
+
+Re-run:
+
 ```bash
 claude
 ```
 
-### "Authentication expired"
+### Codex authentication expired
 
-Your session has expired. Log in again:
+Re-run:
+
 ```bash
-claude
+codex login
 ```
 
-### "Network Error"
+### Network or rate-limit errors
 
-Check your internet connection. The script automatically retries up to 3 times with exponential backoff.
+- Check your internet connection
+- Retry after provider-side rate limiting clears
+- For Codex, remember the endpoint is experimental and may temporarily break
 
 ### Command not found
 
 Make sure `~/.local/bin` is in your PATH:
+
 ```bash
-echo $PATH | grep "$HOME/.local/bin"
+echo "$PATH" | grep "$HOME/.local/bin"
 ```
 
-If not, add it:
+If not:
+
 ```bash
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-## Differences from macOS App
-
-| Feature | macOS App | Linux Script |
-|---------|-----------|--------------|
-| UI | Menubar dropdown | Terminal output |
-| Launch | Menubar icon | Manual/alias |
-| Auto-start | Launch at login | Cron/systemd (manual) |
-| Refresh | Auto (2 min) | Watch mode (--watch) |
-| Notifications | System | Terminal only |
-
 ## Privacy
 
-- Your credentials never leave your machine
-- No analytics or telemetry
-- No data sent anywhere except Anthropic's API
-- Open source - verify the code yourself
+- Credentials stay on your machine
+- No analytics or telemetry are added here
+- Requests go directly to provider backends
+- The code is open source and inspectable
 
-## Process Tracking Configuration
+## Compatibility
 
-The terminal script can track multiple AI coding assistant programs to provide process information in verbose mode. By default, it tracks `claude` and `opencode`.
+The old command names still work as wrappers:
 
-### Customize Tracked Programs
-
-Track specific programs:
 ```bash
-# Track only claude
-claude-usage --programs claude --verbose
-
-# Track claude and opencode (default)
-claude-usage --programs claude,opencode --verbose
-
-# Track claude, opencode, and cursor
-claude-usage --programs claude,opencode,cursor --verbose
-
-# Track any custom programs
-claude-usage --programs my-ai-tool,another-tool --verbose
+claude-usage
+claude-usage-waybar
 ```
-
-### How It Works
-
-- The `--programs` flag accepts a comma-separated list of process names
-- Process names are case-sensitive and must match exactly
-- Use `pgrep -l <program>` to verify the exact process name
-- The script uses `pgrep -x` for exact matching
-- Verbose mode shows which programs are detected and how many instances
-
-**Note:** The Waybar integration uses the same `--programs` flag to determine active/idle display mode. See [waybar/README.md](waybar/README.md) for details.
-
-## Advanced Usage
-
-### Shell Alias
-
-Add to your `.bashrc` or `.zshrc`:
-```bash
-alias cu='claude-usage'
-alias cuw='claude-usage --watch'
-alias cuv='claude-usage --verbose'
-```
-
-### Cron Job
-
-Check usage every hour (saves to log):
-```bash
-# Add to crontab (crontab -e)
-0 * * * * /home/yourusername/.local/bin/claude-usage >> ~/.claude-usage.log 2>&1
-```
-
-### systemd User Service
-
-Create `~/.config/systemd/user/claude-usage.service`:
-```ini
-[Unit]
-Description=Claude Usage Monitor
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/home/yourusername/.local/bin/claude-usage --watch
-Restart=on-failure
-RestartSec=60
-
-[Install]
-WantedBy=default.target
-```
-
-Enable and start:
-```bash
-systemd --user enable claude-usage
-systemd --user start claude-usage
-```
-
-## License
-
-MIT License.
-
-## Credits
-
-This project was inspired by [@richhickson](https://x.com/richhickson)'s [macOS Claude Usage menubar app](https://github.com/richhickson/claudecodeusage#).
-
-Special thanks to [DHH](https://world.hey.com/dhh) (David Heinemeier Hansson) for creating [Omarchy](https://github.com/basecamp/omarchy).
-
-## Disclaimer
-
-This is an unofficial tool not affiliated with Anthropic. It uses an undocumented API that may change without notice.
