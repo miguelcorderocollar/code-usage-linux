@@ -32,6 +32,19 @@ def status_from_utilization(utilization: float) -> str:
     return "ok"
 
 
+def usage_tier_class(utilization: float) -> str:
+    """Map utilization to a granular Waybar CSS class."""
+    if utilization >= 95:
+        return "usage-95"
+    if utilization >= 85:
+        return "usage-85"
+    if utilization >= 70:
+        return "usage-70"
+    if utilization >= 50:
+        return "usage-50"
+    return "usage-0"
+
+
 def color_for_utilization(utilization: float) -> str:
     """Get ANSI color code for utilization."""
     if utilization >= 90:
@@ -196,6 +209,7 @@ def build_waybar_payload(
     active = any(count > 0 for count in program_counts.values())
     percentage = int(primary.max_utilization)
     status = status_from_utilization(primary.max_utilization)
+    tier_class = usage_tier_class(primary.max_utilization)
 
     text = f"\uf121 {percentage}%"
     if not active:
@@ -232,7 +246,7 @@ def build_waybar_payload(
     return {
         "text": text,
         "tooltip": "\n".join(tooltip_lines),
-        "class": status,
+        "class": [status, tier_class, "active" if active else "idle"],
         "percentage": percentage,
         "alt": primary.key if active else "idle",
     }
