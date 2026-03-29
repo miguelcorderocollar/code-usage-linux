@@ -1,94 +1,18 @@
-/* Claude Usage Module Styling for Waybar - Minimalist Design */
-/* Add this to your ~/.config/waybar/style.css */
-
-/*
- * Features two display modes:
- * - Simple mode: Just emoji when idle (no usage changes for 10+ min)
- * - Active mode: Emoji + percentage when actively coding
- * Minimalistic: just color, no backgrounds. Hover shows prominent highlight.
- */
-
-/* Base styling - minimalistic, just color */
-#custom-claude-usage {
+/* Code Usage Module */
+#custom-code-usage {
     min-width: 12px;
-    margin: 0 7.5px;
-    font-weight: 500;
-    font-size: 12px;
-    transition: all 0.3s ease;
-    background-color: transparent;
-    border: none;
+    margin: 0 8px;
 }
 
-/* OK status (< 70% usage) - Green */
-#custom-claude-usage.ok {
-    color: #a6e3a1;  /* Catppuccin Mocha Green */
+#custom-code-usage.ok {
+    color: #a6e3a1;
 }
 
-/* Warning status (70-89% usage) - Yellow */
-#custom-claude-usage.warning {
-    color: #f9e2af;  /* Catppuccin Mocha Yellow */
+#custom-code-usage.warning {
+    color: #f9e2af;
 }
 
-/* Critical status (>= 90% usage) - Red */
-#custom-claude-usage.critical {
-    color: #f38ba8;  /* Catppuccin Mocha Red */
+#custom-code-usage.critical,
+#custom-code-usage.error {
+    color: #f38ba8;
 }
-
-/* No credentials (not logged in) - Blue/Cyan with key icon */
-#custom-claude-usage.no-credentials {
-    color: #89dceb;  /* Catppuccin Mocha Cyan */
-    opacity: 0.8;
-}
-
-/* Error status (network error, API errors, etc.) - Warning icon */
-#custom-claude-usage.error {
-    color: #f9e2af;  /* Catppuccin Mocha Yellow */
-    opacity: 0.8;
-}
-
-
-
-
-
-/* Alternative: Ultra-minimal (no hover effects, just color) */
-/*
-#custom-claude-usage {
-    padding: 0 6px;
-    margin: 0 2px;
-    font-weight: 500;
-}
-
-#custom-claude-usage.ok { color: #a6e3a1; }
-#custom-claude-usage.warning { color: #f9e2af; }
-#custom-claude-usage.critical { color: #f38ba8; }
-#custom-claude-usage.error { color: #cba6f7; opacity: 0.7; }
-*/
-
-/* Alternative: Light theme colors */
-/*
-#custom-claude-usage.ok { color: #40a02b; }
-#custom-claude-usage.warning { color: #df8e1d; }
-#custom-claude-usage.critical { color: #d20f39; }
-#custom-claude-usage.error { color: #8839ef; }
-*/
-
-/* Alternative: Stronger hover with border */
-/*
-#custom-claude-usage.ok:hover {
-    background-color: rgba(166, 227, 161, 0.25);
-    border: 2px solid rgba(166, 227, 161, 0.5);
-    border-radius: 10px;
-}
-
-#custom-claude-usage.warning:hover {
-    background-color: rgba(249, 226, 175, 0.25);
-    border: 2px solid rgba(249, 226, 175, 0.5);
-    border-radius: 10px;
-}
-
-#custom-claude-usage.critical:hover {
-    background-color: rgba(243, 139, 168, 0.25);
-    border: 2px solid rgba(243, 139, 168, 0.5);
-    border-radius: 10px;
-}
-*/

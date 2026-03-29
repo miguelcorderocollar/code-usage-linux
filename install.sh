@@ -1,7 +1,6 @@
 #!/bin/bash
 #
 # Installation script for Code Usage for Linux
-# Installs the Python app bundle to ~/.local/share/code-usage and wrappers to ~/.local/bin
 #
 
 set -e
@@ -11,17 +10,12 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-APP_NAME="Code Usage for Linux"
-INSTALL_ROOT="$HOME/.local/share/code-usage"
-BIN_DIR="$HOME/.local/bin"
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-echo "$APP_NAME - Installation Script"
-echo "=================================="
+echo "Code Usage for Linux - Installation Script"
+echo "========================================="
 echo ""
 
 echo -n "Checking Python version... "
-if ! command -v python3 &> /dev/null; then
+if ! command -v python3 >/dev/null 2>&1; then
     echo -e "${RED}FAILED${NC}"
     echo "Error: Python 3 is not installed."
     echo "Please install Python 3.8 or later and try again."
@@ -38,7 +32,7 @@ fi
 echo -e "${GREEN}OK${NC} (Python $PYTHON_VERSION)"
 
 echo -n "Checking pip... "
-if ! command -v pip3 &> /dev/null; then
+if ! command -v pip3 >/dev/null 2>&1; then
     echo -e "${RED}FAILED${NC}"
     echo "Error: pip3 is not installed."
     echo "Please install pip3 and try again."
@@ -47,63 +41,46 @@ fi
 echo -e "${GREEN}OK${NC}"
 
 echo -n "Installing Python dependencies... "
-if pip3 install --user -q requests &> /dev/null; then
+if pip3 install --user -q 'requests>=2.25.0' >/dev/null 2>&1; then
     echo -e "${GREEN}OK${NC}"
 else
     echo -e "${YELLOW}WARNING${NC}"
     echo "Failed to install requests automatically."
-    echo "Please run: pip3 install --user requests"
+    echo "Please run: pip3 install --user 'requests>=2.25.0'"
 fi
 
-mkdir -p "$INSTALL_ROOT" "$INSTALL_ROOT/waybar" "$BIN_DIR"
-rm -rf "$INSTALL_ROOT/code_usage"
+INSTALL_DIR="$HOME/.local/bin"
+mkdir -p "$INSTALL_DIR"
 
-echo -n "Installing application files... "
-cp -R "$SCRIPT_DIR/code_usage" "$INSTALL_ROOT/code_usage"
-cp "$SCRIPT_DIR/code-usage.py" "$INSTALL_ROOT/code-usage.py"
-cp "$SCRIPT_DIR/claude-usage.py" "$INSTALL_ROOT/claude-usage.py"
-cp "$SCRIPT_DIR/waybar/code-usage-waybar.py" "$INSTALL_ROOT/waybar/code-usage-waybar.py"
-cp "$SCRIPT_DIR/waybar/claude-usage-waybar.py" "$INSTALL_ROOT/waybar/claude-usage-waybar.py"
-chmod +x \
-    "$INSTALL_ROOT/code-usage.py" \
-    "$INSTALL_ROOT/claude-usage.py" \
-    "$INSTALL_ROOT/waybar/code-usage-waybar.py" \
-    "$INSTALL_ROOT/waybar/claude-usage-waybar.py"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo -n "Installing shared package... "
+rm -rf "$INSTALL_DIR/code_usage"
+cp -r "$SCRIPT_DIR/code_usage" "$INSTALL_DIR/code_usage"
 echo -e "${GREEN}OK${NC}"
 
-echo -n "Installing command wrappers... "
-cat > "$BIN_DIR/code-usage" <<EOF
-#!/bin/bash
-export PYTHONPATH="$INSTALL_ROOT"
-exec python3 "$INSTALL_ROOT/code-usage.py" "\$@"
-EOF
-cat > "$BIN_DIR/claude-usage" <<EOF
-#!/bin/bash
-export PYTHONPATH="$INSTALL_ROOT"
-exec python3 "$INSTALL_ROOT/claude-usage.py" "\$@"
-EOF
-cat > "$BIN_DIR/code-usage-waybar" <<EOF
-#!/bin/bash
-export PYTHONPATH="$INSTALL_ROOT"
-exec python3 "$INSTALL_ROOT/waybar/code-usage-waybar.py" "\$@"
-EOF
-cat > "$BIN_DIR/claude-usage-waybar" <<EOF
-#!/bin/bash
-export PYTHONPATH="$INSTALL_ROOT"
-exec python3 "$INSTALL_ROOT/waybar/claude-usage-waybar.py" "\$@"
-EOF
-chmod +x \
-    "$BIN_DIR/code-usage" \
-    "$BIN_DIR/claude-usage" \
-    "$BIN_DIR/code-usage-waybar" \
-    "$BIN_DIR/claude-usage-waybar"
+echo -n "Installing primary CLI... "
+cp "$SCRIPT_DIR/code-usage.py" "$INSTALL_DIR/code-usage"
+chmod +x "$INSTALL_DIR/code-usage"
+echo -e "${GREEN}OK${NC}"
+
+echo -n "Installing Waybar helper... "
+cp "$SCRIPT_DIR/waybar/code-usage-waybar.py" "$INSTALL_DIR/code-usage-waybar"
+chmod +x "$INSTALL_DIR/code-usage-waybar"
+echo -e "${GREEN}OK${NC}"
+
+echo -n "Installing compatibility aliases... "
+cp "$SCRIPT_DIR/claude-usage.py" "$INSTALL_DIR/claude-usage"
+cp "$SCRIPT_DIR/waybar/claude-usage-waybar.py" "$INSTALL_DIR/claude-usage-waybar"
+chmod +x "$INSTALL_DIR/claude-usage" "$INSTALL_DIR/claude-usage-waybar"
 echo -e "${GREEN}OK${NC}"
 
 echo -n "Checking PATH configuration... "
-if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     echo -e "${YELLOW}NEEDS UPDATE${NC}"
     echo ""
-    echo "$BIN_DIR is not in your PATH."
+    echo "~/.local/bin is not in your PATH."
+    echo "Adding it to your shell configuration..."
 
     if [ -n "$BASH_VERSION" ]; then
         SHELL_CONFIG="$HOME/.bashrc"
@@ -133,4 +110,9 @@ echo ""
 echo "Compatibility aliases:"
 echo "  claude-usage"
 echo "  claude-usage-waybar"
+echo ""
+echo "Examples:"
+echo "  code-usage --provider auto"
+echo "  code-usage --provider codex --json"
+echo "  code-usage-waybar --provider auto --programs claude,codex,opencode"
 echo ""

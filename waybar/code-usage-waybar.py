@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Waybar module for provider-neutral code usage monitoring."""
+"""Primary Waybar entrypoint for Code Usage."""
 
+import os
 import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from code_usage.waybar_support import run_waybar
+from code_usage.waybar_app import main
 
 
 if __name__ == "__main__":
-    raise SystemExit(run_waybar())
+    raise SystemExit(main())

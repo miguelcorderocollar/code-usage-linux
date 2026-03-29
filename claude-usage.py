@@ -1,8 +1,22 @@
 #!/usr/bin/env python3
-"""Backward-compatible wrapper for Claude-specific CLI usage."""
+"""Compatibility shim for the renamed code-usage CLI."""
 
-from code_usage.cli import run_cli
+import os
+import sys
+from typing import List
+
+sys.path.insert(0, os.path.dirname(__file__))
+
+from code_usage.app import main
+
+
+def _legacy_argv() -> List[str]:
+    """Preserve Claude-only defaults for the compatibility alias."""
+    argv = sys.argv[1:]
+    if "--provider" not in argv:
+        return ["--provider", "claude", *argv]
+    return argv
 
 
 if __name__ == "__main__":
-    raise SystemExit(run_cli(default_provider="claude"))
+    raise SystemExit(main(_legacy_argv()))

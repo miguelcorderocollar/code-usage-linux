@@ -1,31 +1,38 @@
 # Code Usage for Linux
 
-A terminal-based usage monitor for Linux that can read quota windows from multiple coding assistants. It currently supports:
+Terminal and Waybar usage monitor for Linux with provider-neutral commands and experimental multi-provider support.
 
-- Claude Code via Anthropic OAuth usage
-- Codex via an experimental ChatGPT-auth usage endpoint
+The project now exposes:
+- `code-usage`
+- `code-usage-waybar`
 
-The app includes a terminal view and a Waybar module for Omarchy and other Wayland desktops.
+Backward-compatible aliases remain available:
+- `claude-usage`
+- `claude-usage-waybar`
+
+The current GitHub repository is still named `claude-usage-linux`, but the product and command surface have been generalized to **Code Usage for Linux**. The intended repo target name is `code-usage-linux`.
 
 ## Features
 
-- Provider-neutral CLI: `code-usage`
-- Claude-only compatibility alias: `claude-usage`
-- Auto provider selection based on highest current utilization
-- Color-coded usage windows with progress bars and reset countdowns
+- Provider-neutral CLI and Waybar integration
+- Claude usage support via Anthropic OAuth
+- Experimental Codex usage support via ChatGPT-auth state
+- `--provider auto|claude|codex`
+- Auto-selection of the highest-utilization working provider
+- Terminal progress bars and reset timers
 - JSON output for scripting
-- Waybar integration with combined worst-case status
 - Process tracking for `claude`, `codex`, and `opencode`
+- Compatibility aliases for existing Claude-specific installs
 
 ## Requirements
 
 - Linux
 - Python 3.8+
 - `requests>=2.25.0`
-- For Claude support: Claude Code CLI login
-- For Codex support: Codex CLI login
+- Claude Code login for Claude provider support
+- Codex login for experimental Codex provider support
 
-## Installation
+## Install
 
 ### Quick install
 
@@ -34,85 +41,176 @@ chmod +x install.sh
 ./install.sh
 ```
 
-This installs the app bundle to `~/.local/share/code-usage` and installs command wrappers to `~/.local/bin`.
+This installs:
+- `~/.local/bin/code-usage`
+- `~/.local/bin/code-usage-waybar`
+- `~/.local/bin/claude-usage`
+- `~/.local/bin/claude-usage-waybar`
+- `~/.local/bin/code_usage/`
 
 ### Manual install
 
 ```bash
-pip3 install --user requests
-mkdir -p ~/.local/share/code-usage ~/.local/bin
-cp -R code_usage ~/.local/share/code-usage/code_usage
-cp code-usage.py ~/.local/share/code-usage/code-usage.py
-cp claude-usage.py ~/.local/share/code-usage/claude-usage.py
-cp waybar/code-usage-waybar.py ~/.local/share/code-usage/waybar/code-usage-waybar.py
-cp waybar/claude-usage-waybar.py ~/.local/share/code-usage/waybar/claude-usage-waybar.py
-chmod +x ~/.local/share/code-usage/code-usage.py ~/.local/share/code-usage/claude-usage.py
-chmod +x ~/.local/share/code-usage/waybar/code-usage-waybar.py ~/.local/share/code-usage/waybar/claude-usage-waybar.py
+pip3 install --user 'requests>=2.25.0'
+mkdir -p ~/.local/bin
+cp -r code_usage ~/.local/bin/code_usage
+cp code-usage.py ~/.local/bin/code-usage
+cp waybar/code-usage-waybar.py ~/.local/bin/code-usage-waybar
+cp claude-usage.py ~/.local/bin/claude-usage
+cp waybar/claude-usage-waybar.py ~/.local/bin/claude-usage-waybar
+chmod +x ~/.local/bin/code-usage ~/.local/bin/code-usage-waybar
+chmod +x ~/.local/bin/claude-usage ~/.local/bin/claude-usage-waybar
 ```
 
 ## Usage
 
-### Auto-select provider
+### Auto-select the most constrained working provider
 
 ```bash
-code-usage
+code-usage --provider auto
 ```
 
-### Force one provider
+### Claude only
 
 ```bash
 code-usage --provider claude
+```
+
+### Experimental Codex only
+
+```bash
 code-usage --provider codex
 ```
 
 ### JSON output
 
 ```bash
-code-usage --json
+code-usage --provider auto --json
 ```
 
-### Verbose mode
+Example shape:
+
+```json
+{
+  "provider": "codex",
+  "provider_display_name": "Codex",
+  "selection_mode": "auto",
+  "status": "ok",
+  "max_utilization": 25,
+  "providers": {
+    "codex": {
+      "plan_type": "plus",
+      "experimental": true,
+      "windows": []
+    }
+  }
+}
+```
+
+### Watch mode
+
+```bash
+code-usage --watch
+```
+
+### Verbose mode with process tracking
 
 ```bash
 code-usage --verbose
+code-usage --programs claude,codex,opencode --verbose
 ```
 
-### Compatibility alias
-
-```bash
-claude-usage
-```
-
-## How it works
+## Provider behavior
 
 ### Claude
 
-Reads `~/.claude/.credentials.json` and queries `https://api.anthropic.com/api/oauth/usage`.
+Claude support reads `~/.claude/.credentials.json` and queries:
+
+```text
+https://api.anthropic.com/api/oauth/usage
+```
 
 ### Codex
 
-Reads `~/.codex/auth.json` and queries `https://chatgpt.com/backend-api/wham/usage`.
+Experimental Codex support reads `~/.codex/auth.json` and queries:
 
-Important: Codex support is experimental and depends on an undocumented endpoint. It may break without notice.
+```text
+https://chatgpt.com/backend-api/wham/usage
+```
+
+If needed, it refreshes tokens through:
+
+```text
+https://auth.openai.com/oauth/token
+```
+
+Normalized Codex windows include:
+- session window
+- weekly window
+- optional code review window
+- plan type
+
+Codex support is marked experimental because it depends on ChatGPT web quota data and an internal auth flow that may change.
+
+## Default process tracking
+
+The default tracked programs are:
+
+```text
+claude,codex,opencode
+```
+
+Override them with:
+
+```bash
+code-usage --programs claude,cursor
+```
 
 ## Waybar
 
-See [waybar/README.md](waybar/README.md) for setup instructions, including Omarchy-specific configuration.
+See [waybar/README.md](waybar/README.md) for the combined Waybar module and [waybar/OMARCHY.md](waybar/OMARCHY.md) for Omarchy-specific setup.
+
+## Validation commands
+
+```bash
+python3 -m py_compile code-usage.py waybar/code-usage-waybar.py
+python3 -m py_compile code_usage/*.py code_usage/providers/*.py
+python3 code-usage.py --provider claude --json
+python3 code-usage.py --provider codex --json
+python3 waybar/code-usage-waybar.py --provider auto
+```
+
+## Compatibility
+
+The old command names still work as wrappers:
+
+```bash
+claude-usage
+claude-usage-waybar
+```
 
 ## Troubleshooting
 
-### Claude not configured
+### Claude authentication
 
 ```bash
 claude
 ```
 
-### Codex not configured
+### Codex authentication
 
 ```bash
-codex login
+codex
 ```
 
-### Network or auth failure
+### PATH issues
 
-Retry the provider login flow. For Codex, the app will attempt token refresh automatically once before failing.
+```bash
+echo "$PATH" | grep "$HOME/.local/bin"
+```
+
+## Privacy
+
+- credentials stay on your machine
+- no analytics or telemetry are added here
+- network requests go directly to provider backends

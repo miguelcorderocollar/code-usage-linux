@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
-"""Backward-compatible wrapper for Claude-specific Waybar usage."""
+"""Compatibility shim for the renamed code-usage-waybar helper."""
 
+import os
 import sys
-from pathlib import Path
+from typing import List
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from code_usage.waybar_support import run_waybar
+from code_usage.waybar_app import main
+
+
+def _legacy_argv() -> List[str]:
+    """Preserve Claude-only defaults for the compatibility alias."""
+    argv = sys.argv[1:]
+    if "--provider" not in argv:
+        return ["--provider", "claude", *argv]
+    return argv
 
 
 if __name__ == "__main__":
-    raise SystemExit(run_waybar(default_provider="claude"))
+    raise SystemExit(main(_legacy_argv()))

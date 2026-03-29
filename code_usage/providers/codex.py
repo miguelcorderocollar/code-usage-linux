@@ -1,226 +1,254 @@
-"""Experimental Codex usage provider."""
+"""Experimental Codex provider implementation."""
 
 from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 import requests
 
-from code_usage.providers.base import ProviderClient, ProviderError, ProviderSnapshot, UsageWindow
+from code_usage.providers.base import ProviderError, ProviderUsage, UsageProvider, UsageWindow
 
 
-class CodexCredentialStore:
-    """Read and refresh Codex ChatGPT auth credentials."""
+class CodexProvider(UsageProvider):
+    """ChatGPT-auth usage provider for Codex."""
 
-    AUTH_PATH = os.path.expanduser("~/.codex/auth.json")
-    REFRESH_ENDPOINT = "https://auth.openai.com/oauth/token"
-    CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
+    key = "codex"
+    display_name = "Codex"
+    experimental = True
+    auth_path = os.path.expanduser("~/.codex/auth.json")
+    usage_endpoint = "https://chatgpt.com/backend-api/wham/usage"
+    refresh_endpoint = "https://auth.openai.com/oauth/token"
+    client_id = "app_EMoamEEZ73f0CkXaXp7hrann"
+    version = "2.0.0"
 
-    def is_configured(self) -> bool:
-        """Return True when the Codex auth file exists."""
-        return os.path.exists(self.AUTH_PATH)
+    def __init__(self, timeout: int = 15) -> None:
+        """Initialize the provider."""
+        self.timeout = timeout
+        self.session = requests.Session()
 
-    def load_auth_data(self) -> Dict[str, Any]:
-        """Load auth data from disk."""
-        if not self.is_configured():
-            raise ProviderError("Not logged in to Codex. Run 'codex login'.")
-
-        try:
-            with open(self.AUTH_PATH, "r", encoding="utf-8") as handle:
-                return json.load(handle)
-        except json.JSONDecodeError as error:
-            raise ProviderError(
-                "Codex auth file is corrupted. Run 'codex login' again."
-            ) from error
-
-    def save_auth_data(self, auth_data: Dict[str, Any]) -> None:
-        """Persist refreshed auth data."""
-        with open(self.AUTH_PATH, "w", encoding="utf-8") as handle:
-            json.dump(auth_data, handle, indent=2)
-
-    def get_chatgpt_tokens(self) -> Dict[str, Any]:
-        """Return tokens for ChatGPT-authenticated Codex."""
-        auth_data = self.load_auth_data()
-        if auth_data.get("auth_mode") != "chatgpt":
-            if auth_data.get("OPENAI_API_KEY"):
-                raise ProviderError(
-                    "Codex is configured with an API key. This app only supports the experimental ChatGPT quota flow for Codex."
-                )
-            raise ProviderError("Codex is not configured in ChatGPT auth mode.")
-
+    def fetch_usage(self) -> ProviderUsage:
+        """Fetch and normalize Codex usage data."""
+        auth_data = self._read_auth()
         tokens = auth_data.get("tokens", {})
         access_token = tokens.get("access_token")
         refresh_token = tokens.get("refresh_token")
+
         if not access_token:
-            raise ProviderError("Codex auth is missing an access token. Run 'codex login' again.")
-        if not refresh_token:
-            raise ProviderError("Codex auth is missing a refresh token. Run 'codex login' again.")
-        return auth_data
-
-    def needs_refresh(self, auth_data: Dict[str, Any]) -> bool:
-        """Return True when the access token should be refreshed."""
-        last_refresh = auth_data.get("last_refresh")
-        if not last_refresh:
-            return True
-
-        try:
-            parsed = datetime.fromisoformat(last_refresh.replace("Z", "+00:00"))
-        except ValueError:
-            return True
-
-        return parsed < datetime.now(timezone.utc) - timedelta(days=8)
-
-    def refresh_tokens(self, auth_data: Dict[str, Any], timeout: int = 10) -> Dict[str, Any]:
-        """Refresh the ChatGPT OAuth tokens."""
-        refresh_token = auth_data["tokens"]["refresh_token"]
-        response = requests.post(
-            self.REFRESH_ENDPOINT,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data={
-                "grant_type": "refresh_token",
-                "client_id": self.CLIENT_ID,
-                "refresh_token": refresh_token,
-            },
-            timeout=timeout,
-        )
-        if response.status_code >= 400:
             raise ProviderError(
-                f"Codex token refresh failed with status {response.status_code}. Run 'codex login' again."
+                "Experimental Codex support could not find an access token in ~/.codex/auth.json.\n"
+                "Please run 'codex' and complete the login flow."
             )
 
+        response = self._request_usage(access_token)
+        if response.status_code == 401:
+            if not refresh_token:
+                raise ProviderError(
+                    "Experimental Codex support found expired authentication with no refresh token.\n"
+                    "Please run 'codex' and sign in again."
+                )
+            refreshed = self._refresh_tokens(refresh_token)
+            auth_data = self._persist_refresh(auth_data, refreshed)
+            access_token = auth_data["tokens"].get("access_token")
+            response = self._request_usage(access_token)
+
+        if response.status_code == 401:
+            raise ProviderError(
+                "Experimental Codex support could not refresh ChatGPT authentication.\n"
+                "Please run 'codex' and sign in again."
+            )
+
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            raise ProviderError(
+                f"Experimental Codex usage API error: {response.status_code}"
+            ) from exc
+
         payload = response.json()
-        auth_data["tokens"]["access_token"] = payload.get("access_token", auth_data["tokens"]["access_token"])
-        auth_data["tokens"]["refresh_token"] = payload.get("refresh_token", auth_data["tokens"]["refresh_token"])
-        if payload.get("id_token"):
-            auth_data["tokens"]["id_token"] = payload["id_token"]
-        auth_data["last_refresh"] = datetime.now(timezone.utc).isoformat()
-        return auth_data
-
-
-class CodexProviderClient(ProviderClient):
-    """Fetch Codex usage from the experimental ChatGPT backend."""
-
-    provider_name = "codex"
-    display_name = "Codex Usage"
-    API_ENDPOINT = "https://chatgpt.com/backend-api/wham/usage"
-
-    def __init__(self, timeout: int = 10) -> None:
-        self.timeout = timeout
-        self.session = requests.Session()
-        self.credentials = CodexCredentialStore()
-
-    def is_configured(self) -> bool:
-        """Return True when Codex auth appears present."""
-        return self.credentials.is_configured()
-
-    def fetch_usage(self) -> ProviderSnapshot:
-        """Fetch and normalize Codex usage."""
-        auth_data = self.credentials.get_chatgpt_tokens()
-        if self.credentials.needs_refresh(auth_data):
-            auth_data = self.credentials.refresh_tokens(auth_data, timeout=self.timeout)
-
-        payload = self._fetch_usage_data(auth_data)
-        windows = self._build_windows(payload)
-        if not windows:
-            raise ProviderError("Codex usage response did not include any windows.")
-
-        snapshot = ProviderSnapshot(
-            provider=self.provider_name,
+        windows = self._normalize_windows(payload)
+        return ProviderUsage(
+            key=self.key,
             display_name=self.display_name,
             windows=windows,
-            extra={"plan_type": payload.get("plan_type")},
-            warnings=[
-                "Experimental backend; this undocumented Codex endpoint may break without notice."
-            ],
+            plan_type=payload.get("plan_type"),
+            experimental=True,
+            warning="Experimental backend based on ChatGPT web quota data.",
+            metadata={"source": "chatgpt-wham-usage"},
         )
-        self.credentials.save_auth_data(auth_data)
-        return snapshot
 
-    def _fetch_usage_data(self, auth_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Fetch raw usage and refresh once on auth failure."""
-        response = self.session.get(
-            self.API_ENDPOINT,
-            headers=self._build_headers(auth_data),
+    def _read_auth(self) -> Dict[str, Any]:
+        """Load Codex auth state from disk."""
+        if not os.path.exists(self.auth_path):
+            raise ProviderError(
+                "Experimental Codex support could not find ~/.codex/auth.json.\n"
+                "Please run 'codex' and complete the login flow."
+            )
+
+        try:
+            with open(self.auth_path, "r", encoding="utf-8") as handle:
+                return json.load(handle)
+        except json.JSONDecodeError as exc:
+            raise ProviderError(
+                "Experimental Codex auth file is corrupted.\n"
+                "Please run 'codex' to re-authenticate."
+            ) from exc
+
+    def _request_usage(self, access_token: str) -> requests.Response:
+        """Request Codex usage data."""
+        return self.session.get(
+            self.usage_endpoint,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/json",
+                "User-Agent": f"CodeUsageLinux/{self.version}",
+            },
             timeout=self.timeout,
         )
 
-        if response.status_code in (401, 403):
-            auth_data = self.credentials.refresh_tokens(auth_data, timeout=self.timeout)
-            retry_response = self.session.get(
-                self.API_ENDPOINT,
-                headers=self._build_headers(auth_data),
-                timeout=self.timeout,
+    def _refresh_tokens(self, refresh_token: str) -> Dict[str, Optional[str]]:
+        """Refresh Codex ChatGPT tokens using the upstream OAuth client id."""
+        response = self.session.post(
+            self.refresh_endpoint,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": f"CodeUsageLinux/{self.version}",
+            },
+            json={
+                "client_id": self.client_id,
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+            },
+            timeout=self.timeout,
+        )
+
+        if response.status_code == 401:
+            try:
+                payload = response.json()
+            except ValueError:
+                payload = {}
+            code = None
+            if isinstance(payload.get("error"), dict):
+                code = payload["error"].get("code")
+            elif isinstance(payload.get("error"), str):
+                code = payload.get("error")
+
+            suffix = f" ({code})" if code else ""
+            raise ProviderError(
+                "Experimental Codex support could not refresh the ChatGPT token"
+                f"{suffix}.\nPlease run 'codex' and sign in again."
             )
-            if retry_response.status_code in (401, 403):
-                raise ProviderError("Codex authentication expired. Run 'codex login' again.")
-            if retry_response.status_code >= 400:
-                raise ProviderError(
-                    f"Codex experimental endpoint error: {retry_response.status_code}"
-                )
-            return retry_response.json()
 
-        if response.status_code >= 400:
-            raise ProviderError(f"Codex experimental endpoint error: {response.status_code}")
-
-        return response.json()
-
-    def _build_headers(self, auth_data: Dict[str, Any]) -> Dict[str, str]:
-        """Build request headers for the experimental endpoint."""
-        headers = {
-            "Authorization": f"Bearer {auth_data['tokens']['access_token']}",
-            "Accept": "application/json",
-        }
-        account_id = auth_data["tokens"].get("account_id")
-        if account_id:
-            headers["ChatGPT-Account-Id"] = account_id
-        return headers
-
-    def _normalize_reset(self, reset_at: Optional[Any]) -> Optional[str]:
-        """Normalize reset timestamp to ISO8601 string."""
-        if reset_at is None:
-            return None
         try:
-            return datetime.fromtimestamp(int(reset_at), tz=timezone.utc).isoformat()
-        except (TypeError, ValueError, OSError):
-            return None
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            raise ProviderError(
+                f"Experimental Codex token refresh failed with status {response.status_code}."
+            ) from exc
 
-    def _build_windows(self, payload: Dict[str, Any]) -> Dict[str, UsageWindow]:
-        """Normalize Codex response windows."""
-        windows: Dict[str, UsageWindow] = {}
+        payload = response.json()
+        return {
+            "id_token": payload.get("id_token"),
+            "access_token": payload.get("access_token"),
+            "refresh_token": payload.get("refresh_token"),
+        }
+
+    def _persist_refresh(
+        self,
+        auth_data: Dict[str, Any],
+        refreshed: Dict[str, Optional[str]],
+    ) -> Dict[str, Any]:
+        """Persist refreshed tokens back to ~/.codex/auth.json."""
+        auth_data.setdefault("tokens", {})
+        for key, value in refreshed.items():
+            if value:
+                auth_data["tokens"][key] = value
+        auth_data["last_refresh"] = datetime.now(timezone.utc).isoformat()
+
+        with open(self.auth_path, "w", encoding="utf-8") as handle:
+            json.dump(auth_data, handle, indent=2)
+            handle.write("\n")
+
+        return auth_data
+
+    def _normalize_windows(self, payload: Dict[str, Any]) -> List[UsageWindow]:
+        """Normalize ChatGPT quota windows."""
+        windows: List[UsageWindow] = []
         rate_limit = payload.get("rate_limit", {})
-        primary = rate_limit.get("primary_window", {})
-        secondary = rate_limit.get("secondary_window", {})
-        code_review = payload.get("code_review_rate_limit", {}).get("primary_window", {})
+        code_review = payload.get("code_review_rate_limit", {})
 
+        primary = self._window_from_snapshot(
+            rate_limit.get("primary_window"),
+            key="session",
+            title="Session Usage",
+            default_subtitle="5-hour window",
+        )
         if primary:
-            windows["session"] = UsageWindow(
-                key="session",
-                label="Session Usage",
-                subtitle="5-hour window",
-                utilization=float(primary.get("used_percent", 0)),
-                resets_at=self._normalize_reset(primary.get("reset_at")),
-            )
+            windows.append(primary)
 
+        secondary = self._window_from_snapshot(
+            rate_limit.get("secondary_window"),
+            key="weekly",
+            title="Weekly Usage",
+            default_subtitle="7-day window",
+        )
         if secondary:
-            windows["weekly"] = UsageWindow(
-                key="weekly",
-                label="Weekly Usage",
-                subtitle="7-day window",
-                utilization=float(secondary.get("used_percent", 0)),
-                resets_at=self._normalize_reset(secondary.get("reset_at")),
-            )
+            windows.append(secondary)
 
-        if code_review:
-            windows["code_review"] = UsageWindow(
-                key="code_review",
-                label="Code Review",
-                subtitle="7-day window",
-                utilization=float(code_review.get("used_percent", 0)),
-                resets_at=self._normalize_reset(code_review.get("reset_at")),
-            )
+        review = self._window_from_snapshot(
+            code_review.get("primary_window"),
+            key="code_review",
+            title="Code Review Usage",
+            default_subtitle="weekly window",
+        )
+        if review:
+            windows.append(review)
 
         return windows
 
+    def _window_from_snapshot(
+        self,
+        snapshot: Optional[Dict[str, Any]],
+        *,
+        key: str,
+        title: str,
+        default_subtitle: str,
+    ) -> Optional[UsageWindow]:
+        """Convert a WHAM window snapshot to a normalized window."""
+        if not isinstance(snapshot, dict):
+            return None
+
+        limit_window_seconds = snapshot.get("limit_window_seconds")
+        subtitle = self._subtitle_for_seconds(limit_window_seconds) or default_subtitle
+        reset_at = snapshot.get("reset_at")
+        resets_at = None
+        if isinstance(reset_at, int):
+            resets_at = datetime.fromtimestamp(reset_at, tz=timezone.utc).isoformat()
+
+        return UsageWindow(
+            key=key,
+            title=title,
+            subtitle=subtitle,
+            utilization=float(snapshot.get("used_percent", 0)),
+            resets_at=resets_at,
+            limit_window_seconds=limit_window_seconds,
+        )
+
+    def _subtitle_for_seconds(self, seconds: Any) -> Optional[str]:
+        """Render a human-friendly window label from seconds."""
+        if not isinstance(seconds, int) or seconds <= 0:
+            return None
+        if seconds % 604800 == 0:
+            weeks = seconds // 604800
+            return "7-day window" if weeks == 1 else f"{weeks}-week window"
+        if seconds % 86400 == 0:
+            days = seconds // 86400
+            return "1-day window" if days == 1 else f"{days}-day window"
+        if seconds % 3600 == 0:
+            hours = seconds // 3600
+            return "1-hour window" if hours == 1 else f"{hours}-hour window"
+        minutes = seconds // 60
+        return "1-minute window" if minutes == 1 else f"{minutes}-minute window"

@@ -1,15 +1,19 @@
 # Omarchy Integration Guide
 
-This project does not ship an Omarchy-managed config. Update your user Waybar files only:
+Omarchy-specific setup for the combined `custom/code-usage` Waybar module.
 
-- `~/.config/waybar/config.jsonc`
-- `~/.config/waybar/style.css`
+## Signal choice
 
-Do not edit files under `~/.local/share/omarchy/`.
+Your current Omarchy Waybar config already uses:
+- `8` for `custom/screenrecording-indicator`
+- `9` for `custom/idle-indicator`
+- `10` for `custom/notification-silencing-indicator`
 
-## Recommended Omarchy module
+Use `11` for `custom/code-usage`.
 
-Use signal `11`. Your current config already uses `7`, `8`, `9`, and `10`.
+## Omarchy module config
+
+Insert the module after `"group/tray-expander"` in `modules-right` and add:
 
 ```jsonc
 "custom/code-usage": {
@@ -18,23 +22,31 @@ Use signal `11`. Your current config already uses `7`, `8`, `9`, and `10`.
   "interval": 120,
   "signal": 11,
   "format": "{text}",
-  "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -c 'code-usage --provider auto; echo; echo Press Enter to close; read'",
+  "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -lc 'code-usage --provider auto; echo; echo Press Enter to close; read'",
   "on-click-right": "pkill -SIGRTMIN+11 waybar",
   "tooltip": true,
   "max-length": 25
 }
 ```
 
-## Suggested placement
+## Install commands
 
-Insert `"custom/code-usage"` in `modules-right` immediately after `"group/tray-expander"`.
+```bash
+cp -r code_usage ~/.local/bin/code_usage
+cp code-usage.py ~/.local/bin/code-usage
+cp waybar/code-usage-waybar.py ~/.local/bin/code-usage-waybar
+cp claude-usage.py ~/.local/bin/claude-usage
+cp waybar/claude-usage-waybar.py ~/.local/bin/claude-usage-waybar
+chmod +x ~/.local/bin/code-usage ~/.local/bin/code-usage-waybar
+chmod +x ~/.local/bin/claude-usage ~/.local/bin/claude-usage-waybar
+```
 
-## CSS
+## Suggested CSS
 
 ```css
 #custom-code-usage {
   min-width: 12px;
-  margin: 0 7.5px;
+  margin: 0 8px;
 }
 
 #custom-code-usage.ok {
@@ -51,8 +63,14 @@ Insert `"custom/code-usage"` in `modules-right` immediately after `"group/tray-e
 }
 ```
 
-## Apply changes
+## Restart
 
 ```bash
 omarchy-restart-waybar
+```
+
+## Manual refresh
+
+```bash
+pkill -SIGRTMIN+11 waybar
 ```

@@ -1,31 +1,68 @@
 # Waybar Integration for Code Usage
 
-This directory contains the Waybar integration for `code-usage`.
+This directory contains the combined Waybar helper for provider-neutral usage monitoring.
 
-## Default module
+Primary helper:
+- `code-usage-waybar`
+
+Compatibility alias:
+- `claude-usage-waybar`
+
+## Module summary
+
+- module id: `custom/code-usage`
+- primary command: `~/.local/bin/code-usage-waybar --provider auto --programs claude,codex,opencode`
+- refresh signal: `11`
+- left click opens the terminal CLI
+- right click refreshes via `SIGRTMIN+11`
+
+## Install
+
+```bash
+cp code-usage-waybar.py ~/.local/bin/code-usage-waybar
+cp claude-usage-waybar.py ~/.local/bin/claude-usage-waybar
+chmod +x ~/.local/bin/code-usage-waybar ~/.local/bin/claude-usage-waybar
+```
+
+Make sure `~/.local/bin/code_usage/` is installed alongside the binaries.
+
+## Config snippet
+
+Add the module after `"group/tray-expander"` in `modules-right`:
 
 ```jsonc
-"custom/code-usage": {
-  "exec": "~/.local/bin/code-usage-waybar --provider auto --programs claude,codex,opencode",
-  "return-type": "json",
-  "interval": 120,
-  "signal": 11,
-  "format": "{text}",
-  "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -c 'code-usage --provider auto; echo; echo Press Enter to close; read'",
-  "on-click-right": "pkill -SIGRTMIN+11 waybar",
-  "tooltip": true,
-  "max-length": 25
+{
+  "modules-right": [
+    "group/tray-expander",
+    "custom/code-usage",
+    "bluetooth",
+    "network",
+    "custom/pia-vpn",
+    "pulseaudio",
+    "cpu",
+    "battery"
+  ],
+
+  "custom/code-usage": {
+    "exec": "~/.local/bin/code-usage-waybar --provider auto --programs claude,codex,opencode",
+    "return-type": "json",
+    "interval": 120,
+    "signal": 11,
+    "format": "{text}",
+    "on-click": "xdg-terminal-exec --app-id=org.omarchy.code-usage -e bash -lc 'code-usage --provider auto; echo; echo Press Enter to close; read'",
+    "on-click-right": "pkill -SIGRTMIN+11 waybar",
+    "tooltip": true,
+    "max-length": 25
+  }
 }
 ```
 
-The module shows the provider currently in the highest-risk state, using compact labels such as `Cl 23%` or `Cx 61%`.
-
-## CSS
+## CSS snippet
 
 ```css
 #custom-code-usage {
   min-width: 12px;
-  margin: 0 7.5px;
+  margin: 0 8px;
 }
 
 #custom-code-usage.ok {
@@ -42,14 +79,15 @@ The module shows the provider currently in the highest-risk state, using compact
 }
 ```
 
-## Compatibility alias
+## Manual test
 
-If you want a Claude-only Waybar module during migration:
-
-```jsonc
-"exec": "~/.local/bin/claude-usage-waybar"
+```bash
+~/.local/bin/code-usage-waybar --provider auto --programs claude,codex,opencode
+pkill -SIGRTMIN+11 waybar
 ```
 
-## Omarchy
+## Notes
 
-See [OMARCHY.md](OMARCHY.md).
+- `auto` queries all working providers and renders the highest-utilization one as primary
+- idle mode shows only the code icon
+- active mode shows the icon and the selected provider percentage

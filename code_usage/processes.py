@@ -1,4 +1,4 @@
-"""Helpers for process detection."""
+"""Process tracking helpers."""
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ DEFAULT_PROGRAMS = ["claude", "codex", "opencode"]
 def parse_programs(programs_arg: str) -> List[str]:
     """Parse a comma-separated program list."""
     programs = [program.strip() for program in programs_arg.split(",") if program.strip()]
-    return programs or DEFAULT_PROGRAMS[:]
+    return programs or list(DEFAULT_PROGRAMS)
 
 
 def count_program_instances(programs: List[str]) -> Dict[str, int]:
-    """Count running instances of tracked programs."""
+    """Count running instances of the tracked programs."""
     counts: Dict[str, int] = {}
 
     for program in programs:
@@ -40,16 +40,14 @@ def count_program_instances(programs: List[str]) -> Dict[str, int]:
             counts[program] = 0
             continue
 
-        process_lines = [line for line in output.split("\n") if line]
+        process_lines = [line for line in output.splitlines() if line]
         if program == "opencode":
             process_lines = [line for line in process_lines if "--port" in line]
-
         counts[program] = len(process_lines)
 
     return counts
 
 
 def is_any_program_running(program_counts: Dict[str, int]) -> bool:
-    """Return True when any tracked program is active."""
+    """Return True when at least one tracked program is running."""
     return any(count > 0 for count in program_counts.values())
-
