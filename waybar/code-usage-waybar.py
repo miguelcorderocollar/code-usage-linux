@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Backward-compatible wrapper for Claude-specific Waybar usage."""
+"""Waybar module for provider-neutral code usage monitoring."""
 
 import sys
 from pathlib import Path
@@ -10,4 +10,4 @@ from code_usage.waybar_support import run_waybar
 
 
 if __name__ == "__main__":
-    raise SystemExit(run_waybar(default_provider="claude"))
+    raise SystemExit(run_waybar())
