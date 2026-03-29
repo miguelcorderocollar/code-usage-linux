@@ -1,34 +1,41 @@
 # Waybar Integration for Code Usage
 
-This directory contains the combined Waybar helper for provider-neutral usage monitoring.
+This directory contains everything needed to integrate provider-neutral usage monitoring into Waybar.
 
 Primary helper:
+
 - `code-usage-waybar`
 
 Compatibility alias:
+
 - `claude-usage-waybar`
 
-## Module summary
+> Using Omarchy? See [OMARCHY.md](OMARCHY.md) for Omarchy-specific configuration and the signal choice already validated against your current config.
 
-- module id: `custom/code-usage`
-- primary command: `~/.local/bin/code-usage-waybar --provider auto --programs claude,codex,opencode`
-- refresh signal: `11`
-- left click opens the terminal CLI
-- right click refreshes via `SIGRTMIN+11`
+## Features
 
-## Install
+- Real-time monitoring in Waybar
+- Combined provider view with worst-case provider selection
+- Rich tooltip with provider windows, plan type, and active processes
+- Auto-refresh every 2 minutes by default
+- Manual refresh via signal
+- Click action to open the terminal view
+
+## Installation
+
+### 1. Install the app
+
+Recommended:
 
 ```bash
-cp code-usage-waybar.py ~/.local/bin/code-usage-waybar
-cp claude-usage-waybar.py ~/.local/bin/claude-usage-waybar
-chmod +x ~/.local/bin/code-usage-waybar ~/.local/bin/claude-usage-waybar
+./install.sh
 ```
 
-Make sure `~/.local/bin/code_usage/` is installed alongside the binaries.
+This installs the required shared package plus the `code-usage-waybar` and `claude-usage-waybar` wrappers.
 
-## Config snippet
+### 2. Configure Waybar
 
-Add the module after `"group/tray-expander"` in `modules-right`:
+Add the module to your `~/.config/waybar/config.jsonc`:
 
 ```jsonc
 {
@@ -57,7 +64,9 @@ Add the module after `"group/tray-expander"` in `modules-right`:
 }
 ```
 
-## CSS snippet
+### 3. Add CSS styling
+
+Add this to `~/.config/waybar/style.css`:
 
 ```css
 #custom-code-usage {
@@ -79,15 +88,100 @@ Add the module after `"group/tray-expander"` in `modules-right`:
 }
 ```
 
-## Manual test
+### 4. Restart Waybar
 
 ```bash
-~/.local/bin/code-usage-waybar --provider auto --programs claude,codex,opencode
+pkill waybar && waybar &
+```
+
+Or if you use Omarchy:
+
+```bash
+omarchy-restart-waybar
+```
+
+## Configuration options
+
+### Provider selection
+
+Default:
+
+```jsonc
+"exec": "~/.local/bin/code-usage-waybar --provider auto --programs claude,codex,opencode"
+```
+
+Force Claude only:
+
+```jsonc
+"exec": "~/.local/bin/code-usage-waybar --provider claude"
+```
+
+Force Codex only:
+
+```jsonc
+"exec": "~/.local/bin/code-usage-waybar --provider codex"
+```
+
+Compatibility alias:
+
+```jsonc
+"exec": "~/.local/bin/claude-usage-waybar"
+```
+
+### Tracking multiple programs
+
+Customize tracked programs:
+
+```jsonc
+"exec": "~/.local/bin/code-usage-waybar --programs codex",
+"exec": "~/.local/bin/code-usage-waybar --programs claude,codex,opencode",
+"exec": "~/.local/bin/code-usage-waybar --programs claude,cursor"
+```
+
+The tooltip shows active tracked programs and instance counts.
+
+### Refresh interval
+
+```jsonc
+"interval": 60,
+"interval": 120,
+"interval": 300
+```
+
+### Manual refresh
+
+```bash
 pkill -SIGRTMIN+11 waybar
 ```
 
-## Notes
+## Troubleshooting
 
-- `auto` queries all working providers and renders the highest-utilization one as primary
-- idle mode shows only the code icon
-- active mode shows the icon and the selected provider percentage
+### Module not appearing
+
+1. Check the installed wrapper:
+
+```bash
+ls -l ~/.local/bin/code-usage-waybar
+```
+
+2. Test it manually:
+
+```bash
+~/.local/bin/code-usage-waybar --provider auto
+```
+
+3. Check Waybar logs:
+
+```bash
+journalctl --user -u waybar -f
+```
+
+### Module not updating
+
+1. Verify `interval` is numeric
+2. Verify the signal number matches your config
+3. Trigger a refresh manually:
+
+```bash
+pkill -SIGRTMIN+11 waybar
+```

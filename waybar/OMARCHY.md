@@ -1,19 +1,20 @@
 # Omarchy Integration Guide
 
-Omarchy-specific setup for the combined `custom/code-usage` Waybar module.
+Configuration guide for integrating Code Usage with Omarchy's Waybar setup.
 
-## Signal choice
+## Important: signal choice
 
-Your current Omarchy Waybar config already uses:
-- `8` for `custom/screenrecording-indicator`
-- `9` for `custom/idle-indicator`
-- `10` for `custom/notification-silencing-indicator`
+Your current config already uses:
 
-Use `11` for `custom/code-usage`.
+- `custom/screenrecording-indicator` with `signal: 8`
+- `custom/idle-indicator` with `signal: 9`
+- `custom/notification-silencing-indicator` with `signal: 10`
 
-## Omarchy module config
+Use `signal: 11` for `custom/code-usage`.
 
-Insert the module after `"group/tray-expander"` in `modules-right` and add:
+## Omarchy-optimized configuration
+
+Add this module:
 
 ```jsonc
 "custom/code-usage": {
@@ -29,19 +30,51 @@ Insert the module after `"group/tray-expander"` in `modules-right` and add:
 }
 ```
 
-## Install commands
+### Why these settings
 
-```bash
-cp -r code_usage ~/.local/bin/code_usage
-cp code-usage.py ~/.local/bin/code-usage
-cp waybar/code-usage-waybar.py ~/.local/bin/code-usage-waybar
-cp claude-usage.py ~/.local/bin/claude-usage
-cp waybar/claude-usage-waybar.py ~/.local/bin/claude-usage-waybar
-chmod +x ~/.local/bin/code-usage ~/.local/bin/code-usage-waybar
-chmod +x ~/.local/bin/claude-usage ~/.local/bin/claude-usage-waybar
+1. `signal: 11` avoids conflicts with your existing Omarchy indicators
+2. `xdg-terminal-exec` follows Omarchy's launcher pattern
+3. `code-usage --provider auto` gives the same provider selection behavior as the Waybar module
+
+## Suggested module position
+
+Place it in `modules-right` after `"group/tray-expander"`:
+
+```jsonc
+"modules-right": [
+  "group/tray-expander",
+  "custom/code-usage",
+  "bluetooth",
+  "network",
+  "custom/pia-vpn",
+  "pulseaudio",
+  "cpu",
+  "battery"
+]
 ```
 
-## Suggested CSS
+## Installation for Omarchy
+
+### 1. Install the app
+
+From the project directory:
+
+```bash
+./install.sh
+```
+
+This is the preferred install path because the command wrappers depend on the shared `code_usage` package installed under `~/.local/bin/code_usage`.
+
+### 2. Update Waybar config
+
+Edit:
+
+- `~/.config/waybar/config.jsonc`
+- `~/.config/waybar/style.css`
+
+Do not edit files under `~/.local/share/omarchy/`.
+
+### 3. Add CSS styling
 
 ```css
 #custom-code-usage {
@@ -63,13 +96,56 @@ chmod +x ~/.local/bin/claude-usage ~/.local/bin/claude-usage-waybar
 }
 ```
 
-## Restart
+### 4. Restart Waybar
 
 ```bash
 omarchy-restart-waybar
 ```
 
 ## Manual refresh
+
+```bash
+pkill -SIGRTMIN+11 waybar
+```
+
+## Manual test
+
+```bash
+~/.local/bin/code-usage-waybar --provider auto
+~/.local/bin/code-usage --provider auto
+```
+
+## Troubleshooting
+
+### Module not showing
+
+1. Check the wrappers exist:
+
+```bash
+ls -l ~/.local/bin/code-usage ~/.local/bin/code-usage-waybar
+```
+
+2. Test the Waybar script manually:
+
+```bash
+~/.local/bin/code-usage-waybar --provider auto
+```
+
+3. Check Waybar logs:
+
+```bash
+journalctl --user -u waybar -f
+```
+
+### Signal not working
+
+Check signal usage in your config:
+
+```bash
+grep -o 'signal[^,]*' ~/.config/waybar/config.jsonc
+```
+
+Then trigger the configured signal:
 
 ```bash
 pkill -SIGRTMIN+11 waybar
