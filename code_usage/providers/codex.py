@@ -113,11 +113,11 @@ class CodexProvider(UsageProvider):
         response = self.session.post(
             self.refresh_endpoint,
             headers={
-                "Content-Type": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/json",
                 "User-Agent": f"CodeUsageLinux/{self.version}",
             },
-            json={
+            data={
                 "client_id": self.client_id,
                 "grant_type": "refresh_token",
                 "refresh_token": refresh_token,

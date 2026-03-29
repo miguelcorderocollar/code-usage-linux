@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Primary Waybar entrypoint for Code Usage."""
 
-import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+SCRIPT_PATH = Path(__file__).resolve()
+for candidate in (SCRIPT_PATH.parent, SCRIPT_PATH.parent.parent):
+    if (candidate / "code_usage").exists():
+        sys.path.insert(0, str(candidate))
+        break
 
 from code_usage.waybar_app import main
 

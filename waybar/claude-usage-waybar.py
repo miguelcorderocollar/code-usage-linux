@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """Compatibility shim for the renamed code-usage-waybar helper."""
 
-import os
 import sys
+from pathlib import Path
 from typing import List
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+SCRIPT_PATH = Path(__file__).resolve()
+for candidate in (SCRIPT_PATH.parent, SCRIPT_PATH.parent.parent):
+    if (candidate / "code_usage").exists():
+        sys.path.insert(0, str(candidate))
+        break
 
 from code_usage.waybar_app import main
 
