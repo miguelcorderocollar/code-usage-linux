@@ -22,7 +22,7 @@ class CodexProvider(UsageProvider):
     usage_endpoint = "https://chatgpt.com/backend-api/wham/usage"
     refresh_endpoint = "https://auth.openai.com/oauth/token"
     client_id = "app_EMoamEEZ73f0CkXaXp7hrann"
-    version = "2.0.0"
+    version = "2.0.1"
 
     def __init__(self, timeout: int = 15) -> None:
         """Initialize the provider."""
@@ -32,7 +32,7 @@ class CodexProvider(UsageProvider):
     def fetch_usage(self) -> ProviderUsage:
         """Fetch and normalize Codex usage data."""
         auth_data = self._read_auth()
-        tokens = auth_data.get("tokens", {})
+        tokens = auth_data.get("tokens") or {}
         access_token = tokens.get("access_token")
         refresh_token = tokens.get("refresh_token")
 
@@ -67,7 +67,20 @@ class CodexProvider(UsageProvider):
                 f"Experimental Codex usage API error: {response.status_code}"
             ) from exc
 
-        payload = response.json()
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise ProviderError(
+                "Experimental Codex usage API returned invalid JSON.\n"
+                "Please run 'codex login' and try again."
+            ) from exc
+
+        if not isinstance(payload, dict):
+            raise ProviderError(
+                "Experimental Codex usage API returned an unexpected response format.\n"
+                "Please run 'codex login' and try again."
+            )
+
         windows = self._normalize_windows(payload)
         return ProviderUsage(
             key=self.key,
@@ -89,12 +102,20 @@ class CodexProvider(UsageProvider):
 
         try:
             with open(self.auth_path, "r", encoding="utf-8") as handle:
-                return json.load(handle)
+                data = json.load(handle)
         except json.JSONDecodeError as exc:
             raise ProviderError(
                 "Experimental Codex auth file is corrupted.\n"
                 "Please run 'codex' to re-authenticate."
             ) from exc
+
+        if not isinstance(data, dict):
+            raise ProviderError(
+                "Experimental Codex auth file has an unexpected format.\n"
+                "Please run 'codex' to re-authenticate."
+            )
+
+        return data
 
     def _request_usage(self, access_token: str) -> requests.Response:
         """Request Codex usage data."""
@@ -142,6 +163,19 @@ class CodexProvider(UsageProvider):
                 f"{suffix}.\nPlease run 'codex' and sign in again."
             )
 
+        if response.status_code == 400:
+            try:
+                payload = response.json()
+            except ValueError:
+                payload = {}
+
+            error_code = payload.get("error")
+            if error_code in {"invalid_grant", "invalid_request"}:
+                raise ProviderError(
+                    "Experimental Codex refresh token is no longer valid.\n"
+                    "Please run 'codex login' and sign in again."
+                )
+
         try:
             response.raise_for_status()
         except requests.HTTPError as exc:
@@ -177,8 +211,16 @@ class CodexProvider(UsageProvider):
     def _normalize_windows(self, payload: Dict[str, Any]) -> List[UsageWindow]:
         """Normalize ChatGPT quota windows."""
         windows: List[UsageWindow] = []
-        rate_limit = payload.get("rate_limit", {})
-        code_review = payload.get("code_review_rate_limit", {})
+        rate_limit = payload.get("rate_limit") or {}
+        if not isinstance(rate_limit, dict):
+            raise ProviderError(
+                "Experimental Codex usage API returned an unexpected rate limit payload.\n"
+                "Please run 'codex login' and try again."
+            )
+
+        code_review = payload.get("code_review_rate_limit") or {}
+        if not isinstance(code_review, dict):
+            code_review = {}
 
         primary = self._window_from_snapshot(
             rate_limit.get("primary_window"),

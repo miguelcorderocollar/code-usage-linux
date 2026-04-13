@@ -19,7 +19,7 @@ class ClaudeProvider(UsageProvider):
     display_name = "Claude Code"
     credentials_path = os.path.expanduser("~/.claude/.credentials.json")
     api_endpoint = "https://api.anthropic.com/api/oauth/usage"
-    version = "2.0.0"
+    version = "2.0.1"
 
     def __init__(self, timeout: int = 10) -> None:
         """Initialize the provider."""
